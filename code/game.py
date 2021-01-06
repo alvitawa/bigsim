@@ -2,6 +2,7 @@
 # Import and initialize the pygame library
 import pygame
 import numpy as np
+import math
 
 from data import Population
 
@@ -38,14 +39,20 @@ def draw_population(population: Population, screen):
 
     for boid in population.population:
         location = tuple((boid[0] * scaling))
-        a = location[0] / pygame.display.get_window_size()[0] * 255
-        b = 255 - location[0] / pygame.display.get_window_size()[0] * 255
-        c = location[1] / pygame.display.get_window_size()[1] * 255
 
-        wowa = int(249 * (location[1] / pygame.display.get_window_size()[1])**2)
-        wowb = int(166 * (location[1] / pygame.display.get_window_size()[1])**2)
-        wowc = int(2 * (location[1] / pygame.display.get_window_size()[1])**2)
-        pygame.draw.circle(screen, BOID_COLOR, location, 5)
+        xness = location[0] / pygame.display.get_window_size()[0]
+        if math.isnan(xness):
+            xness = 0
+        
+        yness = location[1] / pygame.display.get_window_size()[1]
+        if math.isnan(yness):
+            yness = 0
+        
+        wowa = int(249 * yness ** 2)
+        wowb = int(166 * yness ** 2)
+        wowc = int(2 * yness ** 2)
+
+        pygame.draw.circle(screen, (wowa, wowb, wowc), location, 5)
 
         # print(boid[1][0])
 

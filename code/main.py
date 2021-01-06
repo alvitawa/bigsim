@@ -23,7 +23,7 @@ tic = time.perf_counter()
 
 # Simulation loop!
 for i in range(iterations):
-    # success = draw_population(population, screen)
+    success = draw_population(population, screen)
 
     # draw_population(population, screen)
 
@@ -31,8 +31,8 @@ for i in range(iterations):
 
     # pygame.time.delay(100)
 
-    # if not success:
-    #     break
+    if not success:
+        break
 
 toc = time.perf_counter()
 

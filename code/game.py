@@ -2,9 +2,8 @@
 # Import and initialize the pygame library
 import pygame
 import numpy as np
-from population import *
 
-from population import Population
+from data import Population
 
 OCEAN_COLOR = (79, 66, 181)
 BOID_COLOR = (249, 166, 2)
@@ -33,20 +32,29 @@ def draw_population(population: Population, screen):
                 population.plot()
 
     # Fill ocean background
-    screen.fill(OCEAN_COLOR)
+    screen.fill((0, 0, 0))
 
-    scaling = np.array(pygame.display.get_window_size()) / population.dim
+    scaling = np.array(pygame.display.get_window_size()) / population.size
 
-    for boid in population.boids:
-        location = tuple((boid.position.T * scaling)[0])
-        # pygame.draw.circle(screen, BOID_COLOR, location, 5)
+    for boid in population.population:
+        location = tuple((boid[0] * scaling))
+        a = location[0] / pygame.display.get_window_size()[0] * 255
+        b = 255 - location[0] / pygame.display.get_window_size()[0] * 255
+        c = location[1] / pygame.display.get_window_size()[1] * 255
 
-        rotation = -np.arccos(boid.moving_vector[0]) * 180 / np.pi
+        wowa = int(249 * (location[1] / pygame.display.get_window_size()[1])**2)
+        wowb = int(166 * (location[1] / pygame.display.get_window_size()[1])**2)
+        wowc = int(2 * (location[1] / pygame.display.get_window_size()[1])**2)
+        pygame.draw.circle(screen, BOID_COLOR, location, 5)
 
-        fish_rect = fish.get_rect()
-        fish_rect.center = location
+        # print(boid[1][0])
 
-        screen.blit(pygame.transform.rotate(fish, rotation), fish_rect)
+        # rotation = -np.arccos(boid[1][0]) * 180 / np.pi
+
+        # fish_rect = fish.get_rect()
+        # fish_rect.center = location
+
+        # screen.blit(pygame.transform.rotate(fish, rotation), fish_rect)
 
         
 

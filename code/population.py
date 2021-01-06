@@ -3,7 +3,7 @@ from boid import *
 import numpy as np
 import matplotlib.pyplot as plt
 
-class Population:
+class OldPopulation:
     """
     This class is for all boids.
     """
@@ -61,8 +61,49 @@ class Population:
             self.wrap_boids()
 
     def iterate_boxes(self, n):
+        box_size = (0.5, 0.5)
+        self.dim = (10, 10)
+
+        boid.position = (5.78, 2.49)
+
+        x_boxes = np.ceil(dim[0] / box_size[0])
+        y_boxes = np.ceil(dim[1] / box_size[1])
+
+        boxes = {(x, y) : [] for x in range(x_boxes) for y in range(y_boxes)}
+
+        boids_per_boxes
+
+        boxes[(boid.position[0] // box_size[0], boid.position[1] // box_size[1])].append([boid.position, boid.moving_vector])
+
+
         for i in range(n):
-            pass
+            # place boids in boxes
+            for boid in self.boids:
+                box = get_box(boid)
+                pass # place in a box
+
+            boxes = {(0, 0) : [], (1, 0) : [], (0, 1) : [], (1, 1) : []}
+
+            for coords, box in boxes.items():
+                school_neighbors = []
+                close_neighbors = []
+
+                for other_coords in coords:
+                    school_neighbors.append()
+
+                for boid in box:
+                    boid.move(school_neighbors, close_neighbors)
+
+            # alternative
+
+            for coords, box in boxes.items():
+                reference = np.array()
+
+                for other_coords in coords:
+                    boids in array
+
+                for boid in box:
+                    boid.move(array)
 
     def wrap_boids(self):
         for boid in self.boids:

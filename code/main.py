@@ -1,42 +1,47 @@
 from boid import *
-from population import *
-from game import *
+from data import *
 
 import time
 import timeit
 
-# Parameters
-boid_count = 300
-environment_size = np.array([10, 10])
-iterations = 1000
+if __name__ == '__main__':
+    from game import *
 
-boid_speed = 0.04
+    # Parameters
+    boid_count = 1000
+    environment_size = [10, 7]
+    grid_size = [1.0, 1.0]
 
-# Init population
-n_boids = 20
-population = Population(boid_count, boid_speed, environment_size)
+    iterations = 10000
 
-# Init pygame
-screen = init_pygame(resolution=[1080, 720])
+    boid_speed = 0.05
+    rotation_rate = 0.95
 
-tic = time.perf_counter()
+    # Init population
+    n_boids = 1
+    population = Population(boid_count, environment_size, boid_speed, grid_size, rotation_rate)
 
-# Simulation loop!
-for i in range(iterations):
-    # success = draw_population(population, screen)
+    # Init pygame
+    screen = init_pygame(resolution=[1920, 1080])
 
-    # draw_population(population, screen)
+    tic = time.perf_counter()
 
-    population.iterate(1)
+    # Simulation loop!
+    for i in range(iterations):
+        success = draw_population(population, screen)
 
-    # pygame.time.delay(100)
+        # draw_population(population, screen)
 
-    # if not success:
-    #     break
+        population.iterate(1)
 
-toc = time.perf_counter()
+        # pygame.time.delay(100)
 
-print(f"Rendered 1000 iterations in {toc - tic:0.4f} seconds")
+        if not success:
+            break
 
-# Clean up
-exit_pygame()
+    toc = time.perf_counter()
+
+    print(f"Rendered 1000 iterations in {toc - tic:0.4f} seconds")
+
+    # Clean up
+    exit_pygame()

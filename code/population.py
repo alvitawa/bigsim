@@ -30,6 +30,40 @@ class Population:
             # Wrap around
             self.wrap_boids()
 
+    def iterate_neighbours(self, n):
+        for i in range(n):
+            # Move boids
+            for boid1 in self.boids:
+
+                # Get Neighbours
+                school_neighbors = []
+                close_neighbors = []
+
+                # Other boids
+                for boid2 in self.boids:
+                    if boid1 != boid2:
+
+                        # Calculate distance
+                        distance = np.linalg.norm(boid1.position - boid2.position)
+
+                        # Add to school neighbors if close
+                        if (distance < boid1.sight_radius):
+                            school_neighbors.append(boid2)
+
+                            # Add to social distancing if too close
+                            if (distance < boid1.boid_radius):
+                                close_neighbors.append(boid2)
+
+                # Move boids
+                boid1.move(school_neighbors, close_neighbors)
+
+            # Wrap around
+            self.wrap_boids()
+
+    def iterate_boxes(self, n):
+        for i in range(n):
+            pass
+
     def wrap_boids(self):
         for boid in self.boids:
             boid.position[0] %= self.dim[0]
@@ -37,7 +71,6 @@ class Population:
     
     # Updates the self.neighbors list
     def update_neighbors(self):
-
         # First boids
         for boid1 in self.boids:
             # Reset neighbors

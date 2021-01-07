@@ -12,12 +12,18 @@ BOID_COLOR = (249, 166, 2)
 # Set up pygame
 def init_pygame(resolution=[1080, 720]):
     pygame.init()
+
+    pygame.display.set_caption("Bad Boids 4 Life Simulator")
+
     screen = pygame.display.set_mode(resolution)
+
+    clock = pygame.time.Clock()
+
     global fish
     fish = pygame.image.load("sprites/fish.png")
     fish = pygame.transform.scale(fish, (25, 25))
 
-    return screen
+    return screen, clock
 
 def exit_pygame():
     pygame.quit()
@@ -48,11 +54,17 @@ def draw_population(population: Population, screen):
         if math.isnan(yness):
             yness = 0
         
-        wowa = int(249 * yness ** 2)
-        wowb = int(166 * yness ** 2)
-        wowc = int(2 * yness ** 2)
+        gradient = 0.25 + 0.75 * yness ** 2
+        color = (int(249 * gradient), int(166 * gradient), int(2 * gradient))
 
-        pygame.draw.circle(screen, (wowa, wowb, wowc), location, 5)
+        # pygame.draw.circle(screen, (wowa, wowb, wowc), location, 5)
+
+        rotation = -np.arccos(boid[1][0]) + 0.5 * np.pi
+
+        if math.isnan(rotation):
+            rotation = 0
+
+        draw_triangle(screen, boid[0] * scaling, rotation, color)
 
         # print(boid[1][0])
 
@@ -69,6 +81,21 @@ def draw_population(population: Population, screen):
     pygame.display.flip()
 
     return True
+
+
+def draw_triangle(surface, position, rotation, color = BOID_COLOR, length = 5, width = 3):
+    head_up_down = np.array([[0.5 * length, 0], [-0.5 * length, 0.5 * width], [-0.5 * length, -0.5 * width]])
+
+    c, s = np.cos(rotation), np.sin(rotation)
+    R = np.array(((c, -s), (s, c)))
+
+    rotated = R.dot(head_up_down.T).T
+
+    rotated += position
+
+    positions = [(int(np.round(a)), int(np.round(b))) for a, b in rotated]
+
+    pygame.draw.polygon(surface, color, positions, width=2)
 
 
 # Done! Time to quit.

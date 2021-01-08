@@ -16,10 +16,12 @@ def exponential_weight_function(distances, inner_diameter, outer_diameter):
     pass
 
 def gaussian_pos_wf(distances, pars):
-    return stats.norm.pdf(distances/2) - stats.norm.pdf(distances*10)*1000
+    cohesion = stats.norm.pdf(distances/pars.cohesion_range)*np.exp(pars.cohesion_weight)
+    separation = stats.norm.pdf(distances/pars.separation_range)*np.exp(pars.separation_weight)
+    return cohesion - separation
 
 def gaussian_dir_wf(distances, pars):
-    return stats.norm.pdf(distances)
+    return stats.norm.pdf(distances/pars.alignment_range)*np.exp(pars.alignment_weight)
 
     
 def sq_pos_wf(distances, pars):
@@ -37,12 +39,12 @@ def identity_wf(distances, _=None):
 class BoidParameters:
     speed: float = 0.05
     agility: float = 0.95
-    separation_weight: float = 4
-    separation_range: float = 1
+    separation_weight: float = 6
+    separation_range: float = 1/10
     cohesion_weight: float = 1
-    cohesion_range: float = 4
+    cohesion_range: float = 2
     alignment_weight: float = 1
-    alignment_range: float = 2
+    alignment_range: float = 1
     pos_wf: Callable = sq_pos_wf
     dir_wf: Callable = sq_dir_wf
 

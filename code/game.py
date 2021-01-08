@@ -42,7 +42,7 @@ def init_pygame(boid_parameters, resolution=[1080, 720]):
 
     for n, par in enumerate(SLIDABLE_PARAMETERS):
         slider = LabeledSlider(
-            screen, 10, resolution[1] - 60 - n * 40, par, initial=boid_parameters[par], min=0, max=6
+            screen, 10, resolution[1] - 60 - n * 40, par, initial=boid_parameters[par], min=0, max=14
         )
         sliders.append(slider)
 

@@ -15,11 +15,13 @@ if __name__ == "__main__":
 
     iterations = 10000
 
+    fps = 60
+
     # Init population
     population = Population(env, boid)
 
     # Init pygame
-    screen = init_pygame(resolution=[1920, 1080])
+    screen, clock = init_pygame(resolution=[1000, 1000])
 
     tic = time.perf_counter()
 
@@ -31,7 +33,7 @@ if __name__ == "__main__":
 
         population.iterate(1)
 
-        # pygame.time.delay(100)
+        clock.tick(fps)
 
         if not success:
             break

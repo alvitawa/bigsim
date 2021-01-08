@@ -65,10 +65,10 @@ class EnvParameters:
     
 def generate_population(n, size):
     population = np.random.rand(n, 2, 2)
+    population[:, 0, :] *= size
+
     population[:, 1, :] -= 0.5
     population[:, 1, :] /= np.linalg.norm(population[:, 1, :], axis=1)[:, None]
-
-    population *= size
 
     return population
 

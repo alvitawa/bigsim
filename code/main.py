@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # boid.pos_wf = gaussian_pos_wf
     # boid.dir_wf = gaussian_dir_wf
 
-    iterations = 100000
+    iterations = 10000
 
     fps = 60
 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     # Init pygame
     screen, clock = init_pygame(resolution=[1000, 1000])
-
+    
     tic = time.perf_counter()
 
     # Simulation loop!

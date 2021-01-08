@@ -90,17 +90,9 @@ def draw_population(population: Population, screen):
         # if math.isnan(xness):
         #     xness = 0
         
-<<<<<<< HEAD
         # yness = location[1] / pygame.display.get_window_size()[1]
         # if math.isnan(yness):
         #     yness = 0
-=======
-        yness = location[1] / pygame.display.get_window_size()[1]
-        if math.isnan(yness):
-            yness = 0
-
-        yness = 1
->>>>>>> 65b88513bb594ff6d37fa725f5581e46d6e92f83
         
         # gradient = 0.25 + 0.75 * yness ** 2
         # color = (int(249 * gradient), int(166 * gradient), int(2 * gradient))
@@ -130,7 +122,7 @@ def update_screen():
     pygame.display.flip()
 
 
-def draw_triangle(surface, position, rotation, color = BOID_COLOR, length = 10, width = 5):
+def draw_triangle(surface, position, rotation, color = BOID_COLOR, length = 15, width = 8):
     head_up_down = np.array([[0.5 * length, 0], [-0.5 * length, 0.5 * width], [-0.5 * length, -0.5 * width]])
 
     c, s = np.cos(rotation), np.sin(rotation)

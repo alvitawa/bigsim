@@ -1,2 +1,2 @@
-
-*.pyc
+code/__pycache__/*
+code/.DS_STORE

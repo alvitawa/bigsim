@@ -8,7 +8,7 @@ if __name__ == "__main__":
     from game import *
 
     # Parameters
-    env = EnvParameters(boid_count=100, shape=(10, 7))
+    env = EnvParameters(boid_count=300, shape=(10, 10))
     boid = BoidParameters()
     # boid.pos_wf = gaussian_pos_wf
     # boid.dir_wf = gaussian_dir_wf
@@ -22,12 +22,19 @@ if __name__ == "__main__":
 
     # Init pygame
     screen, clock = init_pygame(resolution=[1000, 1000])
-
+    
     tic = time.perf_counter()
 
     # Simulation loop!
     for i in range(iterations):
-        success = draw_population(population, screen)
+        quit = check_input(population)
+
+        clear_screen(screen)
+
+        draw_population(population, screen)
+        draw_sliders()
+
+        update_screen()
 
         # draw_population(population, screen)
 
@@ -35,7 +42,7 @@ if __name__ == "__main__":
 
         clock.tick(fps)
 
-        if not success:
+        if quit:
             break
 
     toc = time.perf_counter()

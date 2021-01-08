@@ -10,8 +10,8 @@ if __name__ == "__main__":
     # Parameters
     env = EnvParameters(boid_count=300, shape=(10, 10))
     boid = BoidParameters()
-    # boid.pos_wf = gaussian_pos_wf
-    # boid.dir_wf = gaussian_dir_wf
+    boid.pos_wf = gaussian_pos_wf
+    boid.dir_wf = gaussian_dir_wf
 
     iterations = 10000
 

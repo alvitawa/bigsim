@@ -16,16 +16,16 @@ def exponential_weight_function(distances, inner_diameter, outer_diameter):
     pass
 
 def gaussian_pos_wf(distances):
-    return stats.norm.pdf(distances/2) - stats.norm.pdf(distances)*2
+    return stats.norm.pdf(distances/2) - stats.norm.pdf(distances*4)*100
 
 def gaussian_dir_wf(distances):
     return stats.norm.pdf(distances)
 
     
 def sq_pos_wf(distances):
-    close = distances < 0.2
+    close = distances < 1
     far = distances < 4 - close
-    return -2*close + far
+    return -4*close + far
 
 def sq_dir_wf(distances):
     return (distances < 1)
@@ -132,7 +132,7 @@ def local_update(inner, outer, pars: BoidParameters):
 
     ## Separation + Cohesion
     positional_target = weighed_positions.sum(axis=0)
-    
+
 
     # Align direction with other fish
     dir_weights = pars.dir_wf(distances) # (1 < distances) & (distances < 4)

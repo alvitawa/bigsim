@@ -8,7 +8,7 @@ if __name__ == "__main__":
     from game import *
 
     # Parameters
-    env = EnvParameters(boid_count=100, shape=(10, 7))
+    env = EnvParameters(boid_count=300, shape=(10, 10))
     boid = BoidParameters()
     # boid.pos_wf = gaussian_pos_wf
     # boid.dir_wf = gaussian_dir_wf
@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # Simulation loop!
     for i in range(iterations):
-        quit = check_input()
+        quit = check_input(population)
 
         clear_screen(screen)
 

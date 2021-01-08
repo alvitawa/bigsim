@@ -125,7 +125,6 @@ def local_update(inner, outer, pars: BoidParameters):
 
     distances = np.power(router, 2).sum(axis=-1)**0.5
 
-
     # Go towards/away from other fish
     pos_weights = pars.pos_wf(distances) # (distances < 1)
 

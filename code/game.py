@@ -27,23 +27,29 @@ def init_pygame(resolution=[1080, 720]):
     fish = pygame.transform.scale(fish, (25, 25))
 
     global cohesion_slider, adhesion_slider, seperation_slider
-    cohesion_slider = LabeledSlider(screen, 10, resolution[1]-100, "cohesion")
-    adhesion_slider = LabeledSlider(screen, 10, resolution[1]-60, "adhesion")
-    seperation_slider = LabeledSlider(screen, 10, resolution[1]-20, "seperation")
+    cohesion_slider = LabeledSlider(screen, 10, resolution[1]-100, "cohesion", initial=0.8)
+    adhesion_slider = LabeledSlider(screen, 10, resolution[1]-60, "adhesion", initial=0.1)
+    # seperation_slider = LabeledSlider(screen, 10, resolution[1]-20, "todo")
 
     return screen, clock
 
 def exit_pygame():
     pygame.quit()
 
-def check_input():
+def check_input(population):
     events = pygame.event.get()
 
     # Update sliders
     cohesion_slider.update(events)
     adhesion_slider.update(events)
-    seperation_slider.update(events)
+    # seperation_slider.update(events)
 
+    cohesion = cohesion_slider.get_value()
+    adhesion = adhesion_slider.get_value()
+
+    population.boid.weights = (cohesion, adhesion)
+
+    print("Updated weights to", population.boid.weights)
 
     # Keyboard presses
     for event in events:
@@ -77,7 +83,7 @@ def clear_screen(screen):
 def draw_sliders():
     cohesion_slider.draw()
     adhesion_slider.draw()
-    seperation_slider.draw()
+    # seperation_slider.draw()
 
 def draw_population(population: Population, screen):
 
@@ -99,10 +105,14 @@ def draw_population(population: Population, screen):
 
         # pygame.draw.circle(screen, (wowa, wowb, wowc), location, 5)
 
-        if math.isnan(boid[1][0]):
-            rotation = 0
+        # fun use unit_dir instead of boid[1]
+        # mouse = np.array(location) - np.array(pygame.mouse.get_pos())
+        # unit_dir = (mouse) / np.linalg.norm(mouse)
+
+        if boid[1][1] >= 0:
+            rotation = np.arccos(boid[1][0])
         else:
-            rotation = -np.arccos(boid[1][0]) + 0.5 * np.pi
+            rotation = -np.arccos(boid[1][0])
 
         draw_triangle(screen, boid[0] * scaling, rotation, BOID_COLOR)
 

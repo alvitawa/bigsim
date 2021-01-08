@@ -81,7 +81,7 @@ def draw_sliders():
 
 def draw_population(population: Population, screen):
 
-    scaling = np.array(pygame.display.get_window_size()) / population.size
+    scaling = np.array(pygame.display.get_window_size()) / population.env.shape
 
     for boid in population.population:
         location = tuple((boid[0] * scaling))
@@ -90,9 +90,17 @@ def draw_population(population: Population, screen):
         # if math.isnan(xness):
         #     xness = 0
         
+<<<<<<< HEAD
         # yness = location[1] / pygame.display.get_window_size()[1]
         # if math.isnan(yness):
         #     yness = 0
+=======
+        yness = location[1] / pygame.display.get_window_size()[1]
+        if math.isnan(yness):
+            yness = 0
+
+        yness = 1
+>>>>>>> 65b88513bb594ff6d37fa725f5581e46d6e92f83
         
         # gradient = 0.25 + 0.75 * yness ** 2
         # color = (int(249 * gradient), int(166 * gradient), int(2 * gradient))

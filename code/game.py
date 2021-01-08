@@ -9,8 +9,8 @@ import math
 import data
 from data import BoidParameters, Population
 
-OCEAN_COLOR = (255, 255, 255)  # (79, 66, 181)
-BOID_COLOR = (0, 0, 0)  # (249, 166, 2)
+OCEAN_COLOR = (49, 36, 131) # (255, 255, 255) 
+BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
 SLIDABLE_PARAMETERS = [
     "speed",
@@ -145,9 +145,16 @@ def update_screen():
     pygame.display.flip()
 
 
-def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=15, width=8):
+def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=20, width=8):
     head_up_down = np.array(
-        [[0.5 * length, 0], [-0.5 * length, 0.5 * width], [-0.5 * length, -0.5 * width]]
+        [[0.5 * length, 0],
+        [0.25 * length, 0.5 * width],
+        [-0.25 * length, 0.1 * width],
+        [-0.5 * length, 0.5 * width],
+        [-0.5 * length, -0.5 * width],
+        [-0.25 * length, -0.1 * width],
+        [0.25 * length, -0.5 * width]
+        ]
     )
 
     c, s = np.cos(rotation), np.sin(rotation)

@@ -3,11 +3,11 @@ from pygame_widgets import Slider, TextBox
 
 class LabeledSlider:
 
-    def __init__(self, screen, pos_x, pos_y, label_text, width=150, label_size=100, min=0.0, max=1.0, initial=0.5, margin=20):
+    def __init__(self, screen, pos_x, pos_y, label_text, width=200, label_size=150, min=0.0, max=1.0, initial=0.5, margin=20):
         self.width = width
         self.label_size = label_size
 
-        self.label = TextBox(screen, pos_x, pos_y, label_size, 30, fontSize=20)
+        self.label = TextBox(screen, pos_x, pos_y, label_size, 30, fontSize=16)
         self.label.setText(label_text)
         self.slider = Slider(screen, pos_x+self.label_size+margin, pos_y, self.width, 20, min=min, max=max, step=0.01, initial=initial)
         self.output = TextBox(screen, pos_x+self.label_size+self.width+margin*2, pos_y, 30, 20, fontSize=10)

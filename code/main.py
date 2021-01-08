@@ -4,24 +4,21 @@ from data import *
 import time
 import timeit
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from game import *
 
     # Parameters
-    boid_count = 300
-    environment_size = [10, 7]
-    grid_size = [1.5, 1.5]
+    env = EnvParameters(boid_count=100, shape=(10, 7))
+    boid = BoidParameters()
+    # boid.pos_wf = gaussian_pos_wf
+    # boid.dir_wf = gaussian_dir_wf
 
     iterations = 10000
-
-    boid_speed = 0.05
-    rotation_rate = 0.45
 
     fps = 60
 
     # Init population
-    n_boids = 1
-    population = Population(boid_count, environment_size, boid_speed, grid_size, rotation_rate)
+    population = Population(env, boid)
 
     # Init pygame
     screen, clock = init_pygame(resolution=[1000, 1000])

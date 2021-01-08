@@ -41,7 +41,7 @@ def draw_population(population: Population, screen):
     # Fill ocean background
     screen.fill((0, 0, 0))
 
-    scaling = np.array(pygame.display.get_window_size()) / population.size
+    scaling = np.array(pygame.display.get_window_size()) / population.env.shape
 
     for boid in population.population:
         location = tuple((boid[0] * scaling))
@@ -53,6 +53,8 @@ def draw_population(population: Population, screen):
         yness = location[1] / pygame.display.get_window_size()[1]
         if math.isnan(yness):
             yness = 0
+
+        yness = 1
         
         gradient = 0.25 + 0.75 * yness ** 2
         color = (int(249 * gradient), int(166 * gradient), int(2 * gradient))

@@ -125,15 +125,14 @@ def local_update(inner, outer, pars: BoidParameters):
 
     distances = np.power(router, 2).sum(axis=-1)**0.5
 
-
     # Go towards/away from other fish
     pos_weights = pars.pos_wf(distances) # (distances < 1)
 
-    weighed_positions = outer[:, None, 0, :] * pos_weights[:, :, None]
-    weighed_means = weighed_positions.sum(axis=0)
-    
+    weighed_positions = router * pos_weights[:, :, None]
+
     ## Separation + Cohesion
-    positional_target = weighed_means - inner[:, 0, :]
+    positional_target = weighed_positions.sum(axis=0)
+    
 
     # Align direction with other fish
     dir_weights = pars.dir_wf(distances) # (1 < distances) & (distances < 4)

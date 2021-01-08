@@ -12,7 +12,7 @@ if __name__ == '__main__':
     environment_size = [10, 7]
     grid_size = [1.5, 1.5]
 
-    iterations = 10000
+    iterations = 100000
 
     boid_speed = 0.05
     rotation_rate = 0.45
@@ -30,7 +30,14 @@ if __name__ == '__main__':
 
     # Simulation loop!
     for i in range(iterations):
-        success = draw_population(population, screen)
+        quit = check_input()
+
+        clear_screen(screen)
+
+        draw_population(population, screen)
+        draw_sliders()
+
+        update_screen()
 
         # draw_population(population, screen)
 
@@ -38,7 +45,7 @@ if __name__ == '__main__':
 
         clock.tick(fps)
 
-        if not success:
+        if quit:
             break
 
     toc = time.perf_counter()

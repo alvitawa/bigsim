@@ -21,7 +21,7 @@ if __name__ == "__main__":
     population = Population(env, boid)
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[1000, 1000])
+    screen, clock = init_pygame(resolution=[1000, 1000], boid_parameters=boid)
     
     tic = time.perf_counter()
 

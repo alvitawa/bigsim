@@ -7,13 +7,24 @@ import numpy as np
 import math
 
 import data
-from data import Population
+from data import BoidParameters, Population
 
-OCEAN_COLOR = (255, 255, 255) # (79, 66, 181)
-BOID_COLOR = (0, 0, 0) # (249, 166, 2)
+OCEAN_COLOR = (255, 255, 255)  # (79, 66, 181)
+BOID_COLOR = (0, 0, 0)  # (249, 166, 2)
+
+SLIDABLE_PARAMETERS = [
+    "speed",
+    "agility",
+    "separation_weight",
+    "separation_range",
+    "cohesion_weight",
+    "cohesion_range",
+    "alignment_weight",
+    "alignment_range",
+]
 
 # Set up pygame
-def init_pygame(resolution=[1080, 720]):
+def init_pygame(boid_parameters, resolution=[1080, 720]):
     pygame.init()
 
     pygame.display.set_caption("Bad Boids 4 Life Simulator")
@@ -26,37 +37,36 @@ def init_pygame(resolution=[1080, 720]):
     fish = pygame.image.load("sprites/fish.png")
     fish = pygame.transform.scale(fish, (25, 25))
 
-    global cohesion_slider, adhesion_slider, seperation_slider
-    cohesion_slider = LabeledSlider(screen, 10, resolution[1]-100, "cohesion", initial=0.8)
-    adhesion_slider = LabeledSlider(screen, 10, resolution[1]-60, "adhesion", initial=0.1)
-    # seperation_slider = LabeledSlider(screen, 10, resolution[1]-20, "todo")
+    global sliders
+    sliders = []
+
+    for n, par in enumerate(SLIDABLE_PARAMETERS):
+        slider = LabeledSlider(
+            screen, 10, resolution[1] - 60 - n * 40, par, initial=boid_parameters[par], min=0, max=6
+        )
+        sliders.append(slider)
 
     return screen, clock
 
+
 def exit_pygame():
     pygame.quit()
+
 
 def check_input(population):
     events = pygame.event.get()
 
     # Update sliders
-    cohesion_slider.update(events)
-    adhesion_slider.update(events)
-    # seperation_slider.update(events)
-
-    cohesion = cohesion_slider.get_value()
-    adhesion = adhesion_slider.get_value()
-
-    population.boid.weights = (cohesion, adhesion)
-
-    print("Updated weights to", population.boid.weights)
+    for par, slider in zip(SLIDABLE_PARAMETERS, sliders):
+        slider.update(events)
+        population.boid[par] = slider.get_value()
 
     # Keyboard presses
     for event in events:
         # Exit nicely
         if event.type == pygame.QUIT:
             return True
-        
+
         if event.type == pygame.KEYDOWN:
             # plot
             if event.key == pygame.K_p:
@@ -76,14 +86,16 @@ def check_input(population):
                 print("Seperation rule is now ", data.do_seperation)
     return False
 
+
 def clear_screen(screen):
     # Fill ocean background
     screen.fill(OCEAN_COLOR)
 
+
 def draw_sliders():
-    cohesion_slider.draw()
-    adhesion_slider.draw()
-    # seperation_slider.draw()
+    for slider in sliders:
+        slider.draw()
+
 
 def draw_population(population: Population, screen):
 
@@ -95,11 +107,11 @@ def draw_population(population: Population, screen):
         # xness = location[0] / pygame.display.get_window_size()[0]
         # if math.isnan(xness):
         #     xness = 0
-        
+
         # yness = location[1] / pygame.display.get_window_size()[1]
         # if math.isnan(yness):
         #     yness = 0
-        
+
         # gradient = 0.25 + 0.75 * yness ** 2
         # color = (int(249 * gradient), int(166 * gradient), int(2 * gradient))
 
@@ -127,13 +139,16 @@ def draw_population(population: Population, screen):
 
     return True
 
+
 def update_screen():
     # Update screen
     pygame.display.flip()
 
 
-def draw_triangle(surface, position, rotation, color = BOID_COLOR, length = 15, width = 8):
-    head_up_down = np.array([[0.5 * length, 0], [-0.5 * length, 0.5 * width], [-0.5 * length, -0.5 * width]])
+def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=15, width=8):
+    head_up_down = np.array(
+        [[0.5 * length, 0], [-0.5 * length, 0.5 * width], [-0.5 * length, -0.5 * width]]
+    )
 
     c, s = np.cos(rotation), np.sin(rotation)
     R = np.array(((c, -s), (s, c)))

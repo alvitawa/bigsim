@@ -15,41 +15,49 @@ from dataclasses import dataclass
 def exponential_weight_function(distances, inner_diameter, outer_diameter):
     pass
 
-def gaussian_pos_wf(distances):
-    return stats.norm.pdf(distances/2) - stats.norm.pdf(distances*4)*100
+def gaussian_pos_wf(distances, pars):
+    return stats.norm.pdf(distances/2) - stats.norm.pdf(distances*10)*1000
 
-def gaussian_dir_wf(distances):
+def gaussian_dir_wf(distances, pars):
     return stats.norm.pdf(distances)
 
     
-def sq_pos_wf(distances):
-    close = distances < 1
-    far = distances < 4 - close
-    return -4*close + far
+def sq_pos_wf(distances, pars):
+    close = distances < pars.separation_range
+    far = distances < pars.cohesion_range - close
+    return -pars.separation_weight*close + pars.cohesion_weight*far
 
-def sq_dir_wf(distances):
-    return (distances < 1)
+def sq_dir_wf(distances, pars):
+    return (distances < pars.alignment_range)*pars.alignment_weight
 
-def sq_separate_wf(distances):
-    return -(distances < 4).astype(int)
-
-def identity_wf(distances):
+def identity_wf(distances, _=None):
     return distances == 0
-
-
-STRATEGIES = 2
 
 @dataclass
 class BoidParameters:
     speed: float = 0.05
     agility: float = 0.95
-    weights: Any = (10,1)
+    separation_weight: float = 4
+    separation_range: float = 1
+    cohesion_weight: float = 1
+    cohesion_range: float = 4
+    alignment_weight: float = 1
+    alignment_range: float = 2
     pos_wf: Callable = sq_pos_wf
     dir_wf: Callable = sq_dir_wf
 
-    def __post_init__(self):
-        self.weights = np.array(self.weights)
-        assert self.weights.shape[-1] == STRATEGIES
+    def position_weights(self, distances):
+        return self.pos_wf(distances, self)
+
+    def direction_weights(self, distances):
+        return self.dir_wf(distances, self)
+
+    def __getitem__(self, index):
+        return getattr(self, index)
+
+    def __setitem__(self, index, value):
+        setattr(self, index, value)
+
 
 @dataclass
 class EnvParameters:
@@ -61,7 +69,6 @@ class EnvParameters:
     
     def __post_init__(self):
         self.shape = np.array(self.shape)
-
     
 def generate_population(n, size):
     population = np.random.rand(n, 2, 2)
@@ -126,7 +133,7 @@ def local_update(inner, outer, pars: BoidParameters):
     distances = np.power(router, 2).sum(axis=-1)**0.5
 
     # Go towards/away from other fish
-    pos_weights = pars.pos_wf(distances) # (distances < 1)
+    pos_weights = pars.position_weights(distances) # (distances < 1)
 
     weighed_positions = router * pos_weights[:, :, None]
 
@@ -135,7 +142,7 @@ def local_update(inner, outer, pars: BoidParameters):
 
 
     # Align direction with other fish
-    dir_weights = pars.dir_wf(distances) # (1 < distances) & (distances < 4)
+    dir_weights = pars.direction_weights(distances) # (1 < distances) & (distances < 4)
     
     weighed_directions = outer[:, None, 1, :] * dir_weights[:, :, None]
     

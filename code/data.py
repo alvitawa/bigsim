@@ -37,16 +37,16 @@ def identity_wf(distances, _=None):
 
 @dataclass
 class BoidParameters:
-    speed: float = 0.04
-    agility: float = 0.1
-    separation_weight: float = 3
-    separation_range: float = 0.43
+    speed: float = 0.05
+    agility: float = 0.95
+    separation_weight: float = 6
+    separation_range: float = 1/10
     cohesion_weight: float = 1
-    cohesion_range: float = 1.6
-    alignment_weight: float = 0.5
-    alignment_range: float = 0.4
-    pos_wf: Callable = sq_pos_wf
-    dir_wf: Callable = sq_dir_wf
+    cohesion_range: float = 2
+    alignment_weight: float = 1
+    alignment_range: float = 1
+    pos_wf: Callable = gaussian_pos_wf
+    dir_wf: Callable = gaussian_dir_wf
 
     def position_weights(self, distances):
         return self.pos_wf(distances, self)
@@ -167,6 +167,10 @@ def local_update(inner, outer, pars: BoidParameters):
     updated_inner[:, 1, :] += pars.agility * deltas
     updated_inner[:, 1, :] /= np.linalg.norm(updated_inner[:, 1, :], axis=1)[:, None]
     updated_inner[:, 0, :] += pars.speed * updated_inner[:, 1, :]
+
+    nans = np.argwhere(np.isnan(updated_inner))
+    if nans.shape[0] > 0:
+        raise Exception(f"{nans.shape[0]} NaN's encountered in local_update")
 
     return updated_inner
 

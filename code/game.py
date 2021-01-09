@@ -12,6 +12,7 @@ from data import BoidParameters, Population
 OCEAN_COLOR = (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
+SLIDERS_OFF = True
 SLIDABLE_PARAMETERS = [
     "speed",
     "agility",
@@ -22,6 +23,9 @@ SLIDABLE_PARAMETERS = [
     "alignment_weight",
     "alignment_range",
 ]
+if SLIDERS_OFF:
+    SLIDABLE_PARAMETERS = []
+
 
 # Set up pygame
 def init_pygame(boid_parameters, resolution=[1080, 720]):

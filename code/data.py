@@ -72,14 +72,22 @@ class EnvParameters:
     def __post_init__(self):
         self.shape = np.array(self.shape)
     
-def generate_population(n, size):
+def generate_population(n, env_size):
     population = np.random.rand(n, 2, 2)
-    population[:, 0, :] *= size
+    population[:, 0, :] *= env_size
 
     population[:, 1, :] -= 0.5
     population[:, 1, :] /= np.linalg.norm(population[:, 1, :], axis=1)[:, None]
 
     return population
+
+def generate_obstacles(n, env_size):
+    obstacles = np.random.rand(n, 1, 2)
+    obstacles[:, 0, :] *= env_size
+
+    return obstacles
+
+
 
 class Population:
     """
@@ -104,6 +112,9 @@ class Population:
 
         # make population
         self.population = generate_population(self.env.boid_count, self.env.shape)
+
+        # make obstacles
+        self.obstacles = generate_obstacles(5, self.env.shape)
 
     def iterate(self, n=1):
         for _ in range(n):

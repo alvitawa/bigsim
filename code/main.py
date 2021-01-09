@@ -13,7 +13,7 @@ if __name__ == "__main__":
     boid.pos_wf = gaussian_pos_wf
     boid.dir_wf = gaussian_dir_wf
 
-    iterations = 10000
+    iterations = 1000
 
     fps = 60
 
@@ -36,11 +36,11 @@ if __name__ == "__main__":
 
         update_screen()
 
-        # draw_population(population, screen)
+        draw_population(population, screen)
 
         population.iterate(1)
 
-        clock.tick(fps)
+        # clock.tick(fps)
 
         if quit:
             break

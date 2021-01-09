@@ -67,23 +67,20 @@ def check_input(population):
         if event.type == pygame.QUIT:
             return True
 
+        # example
         if event.type == pygame.KEYDOWN:
-            # plot
             if event.key == pygame.K_p:
                 pass
-                # population.plot() TODO REIMPLEMENT THIS
-            # toggle rules
-            if event.key == pygame.K_1:
-                data.do_cohesion = not data.do_cohesion
-                print("Cohesion rule is now ", data.do_cohesion)
 
-            if event.key == pygame.K_2:
-                data.do_alignment = not data.do_alignment
-                print("Alignment rule is now ", data.do_alignment)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1: # left click
+                pos = np.array(pygame.mouse.get_pos())
+                scaled = pos / np.array(pygame.display.get_window_size()) * population.env.shape
 
-            if event.key == pygame.K_3:
-                data.do_seperation = not data.do_seperation
-                print("Seperation rule is now ", data.do_seperation)
+                new_shape = np.array(population.obstacles.shape)
+                new_shape[0] += 1
+                population.obstacles = np.append(population.obstacles, scaled).reshape(new_shape)
+
     return False
 
 
@@ -137,6 +134,12 @@ def draw_population(population: Population, screen):
 
         # screen.blit(pygame.transform.rotate(fish, rotation), fish_rect)
 
+    for obstacle in population.obstacles:
+        location = tuple((obstacle[0] * scaling))
+
+        pygame.draw.circle(screen, (245, 40, 40), location, 6)
+
+
     return True
 
 
@@ -145,7 +148,8 @@ def update_screen():
     pygame.display.flip()
 
 
-def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=20, width=8):
+
+def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=10, width=4):
     head_up_down = np.array(
         [[0.5 * length, 0],
         [0.25 * length, 0.5 * width],

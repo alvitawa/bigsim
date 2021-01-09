@@ -37,10 +37,6 @@ def init_pygame(boid_parameters, resolution=[1080, 720]):
 
     clock = pygame.time.Clock()
 
-    global fish
-    fish = pygame.image.load("sprites/fish.png")
-    fish = pygame.transform.scale(fish, (25, 25))
-
     global sliders
     sliders = []
 

@@ -22,17 +22,29 @@ def simulation_loop(population, screen, clock, fps):
     computation_time = 0
     render_time = 0
 
+    fps_measurer = 0
+    fpers = 0
+    second = 0
+
     # Simulation loop!
     big_tic = time.perf_counter()
     with Pool(processes=threads) as pool:
         while not stop:
+            begin = time.time()
+
             quit = check_input(population)
 
             tic = time.perf_counter() # Rendering
             clear_screen(screen)
             draw_population(population, screen)
             draw_sliders()
+
+            # Fps counter
+            draw_number(screen, fps_measurer)
+
+            # Flip buffers
             update_screen()
+            
             toc = time.perf_counter()
 
             render_time += toc - tic
@@ -51,6 +63,16 @@ def simulation_loop(population, screen, clock, fps):
             iterations += 1
             if iterations >= iterations_left:
                 break
+            
+            fpers += 1
+
+            # Display fps
+            second += time.time() - begin
+            if second > 1:
+                fps_measurer = fpers
+                fpers = 0
+                second = 0
+
     big_toc = time.perf_counter()
 
     diff = big_toc - big_tic

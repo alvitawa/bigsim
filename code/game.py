@@ -93,6 +93,12 @@ def draw_sliders():
     for slider in sliders:
         slider.draw()
 
+def draw_number(screen, number):
+        '''Displays a number on the screen'''
+        font = pygame.font.SysFont('arial', 50)
+        text = font.render(str(number), True, (0, 0, 0))
+        screen.blit(text, (0,0))
+        # pygame.display.update()
 
 def draw_population(population: Population, screen):
 

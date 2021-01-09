@@ -7,6 +7,8 @@ import timeit
 import threading
 from IPython import embed
 
+FUCK_IPYTHON = True
+
 stop = False
 exc_info = None
 threads = 4
@@ -79,9 +81,12 @@ if __name__ == "__main__":
     # Init pygame
     screen, clock = init_pygame(resolution=[1400, 800], boid_parameters=boid)
 
-    start()
+    if FUCK_IPYTHON:
+        simulation_loop(population, screen, clock, fps)
 
-    embed()
+    else:
+        start()
+        embed()
 
     stop = True
     

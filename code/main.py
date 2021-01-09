@@ -23,6 +23,7 @@ def simulation_loop(population, screen, clock, fps):
     render_time = 0
 
     # Simulation loop!
+    big_tic = time.perf_counter()
     with Pool(processes=threads) as pool:
         while not stop:
             quit = check_input(population)
@@ -48,9 +49,16 @@ def simulation_loop(population, screen, clock, fps):
                 break
 
             iterations += 1
+            if iterations >= iterations_left:
+                break
+    big_toc = time.perf_counter()
+
+    diff = big_toc - big_tic
     
-    print(f"Rendered {iterations} iterations in {render_time:0.4f} seconds. {iterations/render_time:0.4f} iterations/sec")
-    print(f"Calculated {iterations} iterations in {computation_time:0.4f} seconds. {iterations/computation_time:0.4f} iterations/sec")
+    print(f"Rendered {iterations} iterations in {render_time:0.4f} seconds ({render_time/diff*100:0.1f}%). {iterations/render_time:0.4f} iterations/sec")
+    print(f"Calculated {iterations} iterations in {computation_time:0.4f} seconds ({computation_time/diff*100:0.1f}%). {iterations/computation_time:0.4f} iterations/sec")
+    print(f"Total {iterations} iterations in {diff:0.4f} seconds. {iterations/diff:0.4f} iterations/sec, (Other expenses were: {diff- render_time - computation_time :0.4f} seconds)")
+    print(f"{iterations_left}, {grid_size}, {threads}, {computation_time/iterations:0.4f}, {render_time/iterations:0.4f}")
 
 def exception_catcher(f, *args, **kwargs):
     global exc_info
@@ -70,18 +78,19 @@ def start():
 if __name__ == "__main__":
     from game import *
 
-    size = 14
+    size = 10
 
-    sight = 1
-    grid_size = 0.5
+    sight = 4
+    global grid_size
+    grid_size = 5
 
     box_sight = np.ceil(sight / grid_size)
 
     # Parameters
-    env = EnvParameters(boid_count=100, shape=(size, size))
+    env = EnvParameters(boid_count=1000, shape=(size, size))
     boid = BoidParameters()
 
-    iterations_left = 10000
+    iterations_left = 1000
 
     fps = 60
 

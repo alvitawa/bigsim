@@ -40,10 +40,10 @@ def identity_wf(distances, _=None):
 class BoidParameters:
     speed: float = 0.04
     agility: float = 0.1
-    separation_weight: float = 3
-    separation_range: float = 0.4
+    separation_weight: float = 4
+    separation_range: float = 0.1
     cohesion_weight: float = 1
-    cohesion_range: float = 1.6
+    cohesion_range: float = 0.4
     alignment_weight: float = 0.5
     alignment_range: float = 0.4
     pos_wf: Callable = gaussian_pos_wf

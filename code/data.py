@@ -7,8 +7,9 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 # Gekke optimalizatie
-from multiprocessing import Pool, Process, Barrier
+from multiprocessing import Pool#, Process, Barrier
 from scipy.spatial import distance_matrix
+from functools import partial
 
 from dataclasses import dataclass
 
@@ -105,16 +106,24 @@ class Population:
         # make population
         self.population = generate_population(self.env.boid_count, self.env.shape)
 
-    def iterate(self, n=1):
+    def iterate(self, pool, n=1):
         for _ in range(n):
             grid_coordinates = self.population[:, 0, :] // self.grid_size
 
-            barrier = Barrier(len(self.boxes))
+            # barrier = Barrier(len(self.boxes))
 
-            results = []
-            for box in self.boxes:
-                idx, new = task(box, self.population, grid_coordinates, self.box_sight_radius, self.boid) # TODO MULTITHREAD MY ASS
-                results.append((idx, new))
+            # results = []
+            # for box in self.boxes:
+            #     idx, new = task(box, self.population, grid_coordinates, self.box_sight_radius, self.boid) # TODO MULTITHREAD MY ASS
+            #     results.append((idx, new))
+            
+            
+            results = pool.map(partial(task,
+                                        population=self.population, 
+                                        grid_coordinates=grid_coordinates, 
+                                        box_sight_radius=self.box_sight_radius, 
+                                        boid_parameters=self.boid), 
+                                self.boxes)
 
             for idx, new in results:
                 self.population[idx] = new

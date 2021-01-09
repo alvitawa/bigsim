@@ -9,6 +9,7 @@ from IPython import embed
 
 stop = False
 exc_info = None
+threads = 4
 
 def simulation_loop(population, screen, clock, fps):
     global stop
@@ -18,26 +19,27 @@ def simulation_loop(population, screen, clock, fps):
     iterations = 0
 
     # Simulation loop!
-    while not stop:
-        quit = check_input(population)
+    with Pool(processes=threads) as pool:
+        while not stop:
+            quit = check_input(population)
 
-        clear_screen(screen)
+            clear_screen(screen)
 
-        draw_population(population, screen)
-        draw_sliders()
+            draw_population(population, screen)
+            draw_sliders()
 
-        update_screen()
+            update_screen()
 
-        # draw_population(population, screen)
+            draw_population(population, screen)
 
-        population.iterate(1)
+            population.iterate(pool, 1)
 
-        clock.tick(fps)
+            clock.tick(fps)
 
-        if quit:
-            break
+            if quit:
+                break
 
-        iterations += 1
+            iterations += 1
 
     toc = time.perf_counter()
 

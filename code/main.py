@@ -1,8 +1,66 @@
 from boid import *
 from data import *
 
+import sys
 import time
 import timeit
+import threading
+from IPython import embed
+
+stop = False
+exc_info = None
+threads = 4
+
+def simulation_loop(population, screen, clock, fps):
+    global stop
+
+    tic = time.perf_counter()
+
+    iterations = 0
+
+    # Simulation loop!
+    with Pool(processes=threads) as pool:
+        while not stop:
+            quit = check_input(population)
+
+            clear_screen(screen)
+
+            draw_population(population, screen)
+            draw_sliders()
+
+            update_screen()
+
+            draw_population(population, screen)
+
+            population.iterate(pool, 1)
+
+            clock.tick(fps)
+
+            if quit:
+                break
+
+            iterations += 1
+
+    toc = time.perf_counter()
+
+    diff = toc - tic
+    
+    print(f"Rendered {iterations} iterations in {diff:0.4f} seconds. {iterations/diff:0.4f} iterations/sec")
+
+def exception_catcher(f, *args, **kwargs):
+    global exc_info
+
+    try:
+        f(*args, **kwargs)
+    except Exception as e:
+        exc_info = sys.exc_info()
+        print(e)
+
+def start():
+    global simulation_loop, population, screen, clock, fps
+    thread = threading.Thread(target=exception_catcher, args=(simulation_loop, population, screen, clock, fps))
+    thread.start()
+        
 
 if __name__ == "__main__":
     from game import *
@@ -10,10 +68,8 @@ if __name__ == "__main__":
     # Parameters
     env = EnvParameters(boid_count=100, shape=(14, 8))
     boid = BoidParameters()
-    boid.pos_wf = gaussian_pos_wf
-    boid.dir_wf = gaussian_dir_wf
 
-    iterations = 1000
+    iterations_left = 10000
 
     fps = 60
 
@@ -23,31 +79,11 @@ if __name__ == "__main__":
     # Init pygame
     screen, clock = init_pygame(resolution=[1400, 800], boid_parameters=boid)
 
-    tic = time.perf_counter()
+    start()
 
-    # Simulation loop!
-    for i in range(iterations):
-        quit = check_input(population)
+    embed()
 
-        clear_screen(screen)
-
-        draw_population(population, screen)
-        draw_sliders()
-
-        update_screen()
-
-        draw_population(population, screen)
-
-        population.iterate(1)
-
-        # clock.tick(fps)
-
-        if quit:
-            break
-
-    toc = time.perf_counter()
-
-    print(f"Rendered 1000 iterations in {toc - tic:0.4f} seconds")
-
+    stop = True
+    
     # Clean up
     exit_pygame()

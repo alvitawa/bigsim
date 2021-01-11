@@ -116,9 +116,9 @@ def draw_sliders():
         slider.draw()
 
 def draw_number(screen, number):
-        '''Displays a number on the screen'''
+        '''Displays a fps number on the screen'''
         font = pygame.font.SysFont('arial', 50)
-        text = font.render(str(number), True, (0, 0, 0))
+        text = font.render(str(number), True, np.abs(np.array(OCEAN_COLOR)-255))
         screen.blit(text, (0,0))
         # pygame.display.update()
 
@@ -129,7 +129,7 @@ def positions_to_colors(positions):
 
     # New GMM based on GMM of last iteration
     GM = GaussianMixture(n_components=K, 
-                        max_iter=1000, 
+                        max_iter=10, 
                         tol=1e-4,
                         means_init=GM.means_,
                         weights_init=GM.weights_,)

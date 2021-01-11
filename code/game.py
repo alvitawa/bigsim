@@ -7,7 +7,7 @@ import numpy as np
 import math
 
 import data
-from data import BoidParameters, Population
+from data import BoidParameters, Simulation
 
 OCEAN_COLOR = (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
@@ -102,7 +102,7 @@ def draw_number(screen, number):
         screen.blit(text, (0,0))
         # pygame.display.update()
 
-def draw_population(population: Population, screen):
+def draw_population(population: Simulation, screen):
 
     scaling = np.array(pygame.display.get_window_size()) / population.env.shape
 

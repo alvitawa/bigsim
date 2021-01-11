@@ -11,7 +11,7 @@ FUCK_IPYTHON = True
 
 stop = False
 exc_info = None
-threads = 6
+threads = 1
 
 def simulation_loop(population, screen, clock, fps):
     global stop
@@ -117,7 +117,7 @@ if __name__ == "__main__":
     fps = 60
 
     # Init population
-    population = Population(env, boid, grid_size=(grid_size, grid_size), box_sight_radius=box_sight)
+    population = Simulation(env, boid, grid_size=(grid_size, grid_size), box_sight_radius=box_sight)
 
     # Init pygame
     screen, clock = init_pygame(resolution=[1400, 800], boid_parameters=boid)

@@ -109,18 +109,17 @@ if __name__ == "__main__":
     box_sight = np.ceil(sight / grid_size)
 
     # Parameters
-    env = EnvParameters(boid_count=200, shape=(size, size))
-    boid = BoidParameters()
+    pars = Parameters(boid_count=200, shape=(size, size))
 
     iterations_left = 100000000
 
     fps = 60
 
     # Init population
-    population = Population(env, boid, grid_size=(grid_size, grid_size), box_sight_radius=box_sight)
+    population = Population(pars, grid_size=(grid_size, grid_size), box_sight_radius=box_sight)
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[1400, 800], boid_parameters=boid)
+    screen, clock = init_pygame(resolution=[1400, 800], simulation_pars=pars)
 
     if FUCK_IPYTHON:
         simulation_loop(population, screen, clock, fps)

@@ -7,7 +7,7 @@ import numpy as np
 import math
 
 import data
-from data import BoidParameters, Population
+from data import Population
 
 OCEAN_COLOR = (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
@@ -30,7 +30,7 @@ if SLIDERS_OFF:
 
 
 # Set up pygame
-def init_pygame(boid_parameters, resolution=[1080, 720]):
+def init_pygame(simulation_pars, resolution=[1080, 720]):
     pygame.init()
 
     pygame.display.set_caption("Bad Boids 4 Life Simulator")
@@ -44,7 +44,7 @@ def init_pygame(boid_parameters, resolution=[1080, 720]):
 
     for n, par in enumerate(SLIDABLE_PARAMETERS):
         slider = LabeledSlider(
-            screen, 10, resolution[1] - 60 - n * 40, par, initial=boid_parameters[par], min=0, max=14
+            screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation_pars[par], min=0, max=14
         )
         sliders.append(slider)
 
@@ -61,7 +61,7 @@ def check_input(population):
     # Update sliders
     for par, slider in zip(SLIDABLE_PARAMETERS, sliders):
         slider.update(events)
-        population.boid[par] = slider.get_value()
+        population.pars[par] = slider.get_value()
 
     # Keyboard presses
     for event in events:
@@ -77,7 +77,7 @@ def check_input(population):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # left click
                 pos = np.array(pygame.mouse.get_pos())
-                scaled = pos / np.array(pygame.display.get_window_size()) * population.env.shape
+                scaled = pos / np.array(pygame.display.get_window_size()) * population.pars.shape
 
                 new_shape = np.array(population.obstacles.shape)
                 new_shape[0] += 1
@@ -104,7 +104,7 @@ def draw_number(screen, number):
 
 def draw_population(population: Population, screen):
 
-    scaling = np.array(pygame.display.get_window_size()) / population.env.shape
+    scaling = np.array(pygame.display.get_window_size()) / population.pars.shape
 
     for boid in population.population:
         location = tuple((boid[0] * scaling))

@@ -43,13 +43,19 @@ def identity_wf(distances, _=None):
     return distances == 0
 
 @dataclass
-class BoidParameters:
+class Parameters:
+    shape: Any=(10, 7)
+    boid_count: int = 300
+
     speed: float = 0.04
     agility: float = 0.1
+
     separation_weight: float = 4
     separation_range: float = 0.1
+
     cohesion_weight: float = 1
     cohesion_range: float = 0.4
+
     alignment_weight: float = 0.5
     alignment_range: float = 0.4
 
@@ -78,17 +84,9 @@ class BoidParameters:
     def __setitem__(self, index, value):
         setattr(self, index, value)
 
-
-@dataclass
-class EnvParameters:
-    """
-        Parameters for the simulation.
-    """
-    shape: Any=(10, 7)
-    boid_count: int = 300
-    
     def __post_init__(self):
         self.shape = np.array(self.shape)
+
     
 def generate_population(n, env_size):
     population = np.random.rand(n, 2, 2)
@@ -112,27 +110,26 @@ class Population:
         This class is for all boids.
     """
 
-    def __init__(self, env_parameters=EnvParameters(), boid_parameters=BoidParameters(), grid_size=(1.0,1.0), box_sight_radius=2):
+    def __init__(self, pars=Parameters(), grid_size=(1.0,1.0), box_sight_radius=2):
 
         
         # Save simulation parameters
-        self.env = env_parameters
-        self.boid = boid_parameters
+        self.pars = pars
 
         # Algo settings
         self.box_sight_radius = box_sight_radius
         self.grid_size = np.array(grid_size)
 
-        x_boxes = int(np.ceil(self.env.shape[0] / self.grid_size[0]))
-        y_boxes = int(np.ceil(self.env.shape[1] / self.grid_size[1]))
+        x_boxes = int(np.ceil(self.pars.shape[0] / self.grid_size[0]))
+        y_boxes = int(np.ceil(self.pars.shape[1] / self.grid_size[1]))
 
         self.boxes = [np.array([x, y]) for x in range(x_boxes) for y in range(y_boxes)]
 
         # make population
-        self.population = generate_population(self.env.boid_count, self.env.shape)
+        self.population = generate_population(self.pars.boid_count, self.pars.shape)
 
         # make obstacles
-        self.obstacles = generate_obstacles(5, self.env.shape)
+        self.obstacles = generate_obstacles(5, self.pars.shape)
 
     def iterate(self, pool, n=1):
         for _ in range(n):
@@ -142,7 +139,7 @@ class Population:
 
             # results = []
             # for box in self.boxes:
-            #     idx, new = task(box, self.population, grid_coordinates, self.box_sight_radius, self.boid) # TODO MULTITHREAD MY ASS
+            #     idx, new = task(box, self.population, grid_coordinates, self.box_sight_radius, self.pars) # TODO MULTITHREAD MY ASS
             #     results.append((idx, new))
             
             
@@ -150,25 +147,25 @@ class Population:
                                         population=self.population, 
                                         grid_coordinates=grid_coordinates, 
                                         box_sight_radius=self.box_sight_radius, 
-                                        boid_parameters=self.boid, obstacles=self.obstacles), 
+                                        pars=self.pars, obstacles=self.obstacles), 
                                 self.boxes)
 
             for idx, new in results:
                 self.population[idx] = new
             
             # wrapping
-            self.population[:, 0, 0] %= self.env.shape[0]
-            self.population[:, 0, 1] %= self.env.shape[1]
+            self.population[:, 0, 0] %= self.pars.shape[0]
+            self.population[:, 0, 1] %= self.pars.shape[1]
 
             # solid walls
-            # self.population[:, 0, 0] = np.clip(self.population[:, 0, 0], 0, self.env.shape[0])
-            # self.population[:, 0, 1] = np.clip(self.population[:, 0, 1], 0, self.env.shape[1])
+            # self.population[:, 0, 0] = np.clip(self.population[:, 0, 0], 0, self.pars.shape[0])
+            # self.population[:, 0, 1] = np.clip(self.population[:, 0, 1], 0, self.pars.shape[1])
 
         # with Pool(processes=4) as pool:
         #     results = pool.map(task, parameters)
 
         
-def local_update(inner, outer, pars: BoidParameters, obstacles):
+def local_update(inner, outer, pars: Parameters, obstacles):
 
     # Outer coordinates relative to each inner position
     router = outer[:, None, 0, :] - inner[:, 0, :]
@@ -199,12 +196,12 @@ def local_update(inner, outer, pars: BoidParameters, obstacles):
 
     distances = np.power(rel_obstacles, 2).sum(axis=-1)**0.5
 
-    # Go towards/away from other fish
+    # Go away from stuff
     obs_weights = pars.obstacle_weights(distances) # (distances < 1)
 
     weighed_positions = rel_obstacles * obs_weights[:, :, None]
 
-    ## Separation + Cohesion
+    ## Avoid points, sharks and walls
     obstacle_target = weighed_positions.sum(axis=0)
 
 
@@ -227,11 +224,11 @@ def local_update(inner, outer, pars: BoidParameters, obstacles):
 
     return updated_inner
 
-def task(assigned_box, population, grid_coordinates, box_sight_radius, boid_parameters, obstacles):
+def task(assigned_box, population, grid_coordinates, box_sight_radius, pars, obstacles):
     inner_idx = np.all(np.equal(grid_coordinates, assigned_box.T), axis=1)
 
     outer_idx = np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= box_sight_radius
 
-    new_inner = local_update(population[inner_idx], population[outer_idx], boid_parameters, obstacles)
+    new_inner = local_update(population[inner_idx], population[outer_idx], pars, obstacles)
 
     return inner_idx, new_inner

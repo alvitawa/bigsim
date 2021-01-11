@@ -6,6 +6,8 @@ from sliders import LabeledSlider
 import numpy as np
 import math
 
+from sklearn.mixture import GaussianMixture
+
 import data
 from data import Population
 
@@ -25,9 +27,29 @@ SLIDABLE_PARAMETERS = [
     "obstacle_range",
 ]
 
+def init_globals():
+    global GM
+    global K
+
+    global COLORS
+
+    K = 5
+
+    # Init K different colors
+    COLORS = np.random.choice(range(256), size=3*K).reshape(K, 3)
+
+    GM = GaussianMixture(n_components=K, 
+                     max_iter=1000, 
+                     tol=1e-4,
+                     init_params='random')
+
+    GM.fit(np.random.rand(K, 2))
+
 
 # Set up pygame
 def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
+    init_globals()
+
     pygame.init()
 
     pygame.display.set_caption("Bad Boids 4 Life Simulator")
@@ -100,11 +122,32 @@ def draw_number(screen, number):
         screen.blit(text, (0,0))
         # pygame.display.update()
 
+def positions_to_colors(positions):
+    global GM
+    global K
+    global COLORS
+
+    # New GMM based on GMM of last iteration
+    GM = GaussianMixture(n_components=K, 
+                        max_iter=1000, 
+                        tol=1e-4,
+                        means_init=GM.means_,
+                        weights_init=GM.weights_,)
+    GM.fit(positions)
+    probs = GM.predict_proba(positions)
+
+    # Convert probabilities to colors
+    return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)
+
 def draw_population(population: Population, screen):
 
     scaling = np.array(pygame.display.get_window_size()) / population.pars.shape
 
-    for boid in population.population:
+    # Coloring with GMM
+    positions = population.population[:,0,:]
+    colors = positions_to_colors(positions)
+
+    for boid, boid_color in zip(population.population, colors):
         location = tuple((boid[0] * scaling))
 
         # xness = location[0] / pygame.display.get_window_size()[0]
@@ -129,7 +172,7 @@ def draw_population(population: Population, screen):
         else:
             rotation = -np.arccos(boid[1][0])
 
-        draw_triangle(screen, boid[0] * scaling, rotation, BOID_COLOR)
+        draw_triangle(screen, boid[0] * scaling, rotation, boid_color)
 
         # print(boid[1][0])
 

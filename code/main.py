@@ -7,15 +7,20 @@ import timeit
 import threading
 from IPython import embed
 
-FUCK_IPYTHON = True
+import configparser
+
+config = configparser.ConfigParser()
+config.read("config.ini")
+
+DEBUG_MODE = bool(config["DEFAULT"]["debug"] == 'True')
+
 
 stop = False
-exc_info = None
-threads = 1
+exc = None
+threads = 6
 
 def simulation_loop(population, screen, clock, fps):
     global stop
-
 
     iterations = 0
 
@@ -34,7 +39,7 @@ def simulation_loop(population, screen, clock, fps):
 
             quit = check_input(population)
 
-            tic = time.perf_counter() # Rendering
+            tic = time.perf_counter()  # Rendering
             clear_screen(screen)
             draw_population(population, screen)
             draw_sliders()
@@ -44,12 +49,12 @@ def simulation_loop(population, screen, clock, fps):
 
             # Flip buffers
             update_screen()
-            
+
             toc = time.perf_counter()
 
             render_time += toc - tic
 
-            tic = time.perf_counter() # Computation
+            tic = time.perf_counter()  # Computation
             population.iterate(pool, 1)
             toc = time.perf_counter()
 
@@ -63,7 +68,7 @@ def simulation_loop(population, screen, clock, fps):
             iterations += 1
             if iterations >= iterations_left:
                 break
-            
+
             fpers += 1
 
             # Display fps
@@ -76,26 +81,38 @@ def simulation_loop(population, screen, clock, fps):
     big_toc = time.perf_counter()
 
     diff = big_toc - big_tic
-    
-    print(f"Rendered {iterations} iterations in {render_time:0.4f} seconds ({render_time/diff*100:0.1f}%). {iterations/render_time:0.4f} iterations/sec")
-    print(f"Calculated {iterations} iterations in {computation_time:0.4f} seconds ({computation_time/diff*100:0.1f}%). {iterations/computation_time:0.4f} iterations/sec")
-    print(f"Total {iterations} iterations in {diff:0.4f} seconds. {iterations/diff:0.4f} iterations/sec, (Other expenses were: {diff- render_time - computation_time :0.4f} seconds)")
-    print(f"{iterations_left}, {grid_size}, {threads}, {computation_time/iterations:0.4f}, {render_time/iterations:0.4f}")
+
+    print(
+        f"Rendered {iterations} iterations in {render_time:0.4f} seconds ({render_time/diff*100:0.1f}%). {iterations/render_time:0.4f} iterations/sec"
+    )
+    print(
+        f"Calculated {iterations} iterations in {computation_time:0.4f} seconds ({computation_time/diff*100:0.1f}%). {iterations/computation_time:0.4f} iterations/sec"
+    )
+    print(
+        f"Total {iterations} iterations in {diff:0.4f} seconds. {iterations/diff:0.4f} iterations/sec, (Other expenses were: {diff- render_time - computation_time :0.4f} seconds)"
+    )
+    print(
+        f"{iterations_left}, {grid_size}, {threads}, {computation_time/iterations:0.4f}, {render_time/iterations:0.4f}"
+    )
+
 
 def exception_catcher(f, *args, **kwargs):
-    global exc_info
+    global exc
 
     try:
         f(*args, **kwargs)
     except Exception as e:
-        exc_info = sys.exc_info()
+        exc = sys.exc_info()[2]
         print(e)
+
 
 def start():
     global simulation_loop, population, screen, clock, fps
-    thread = threading.Thread(target=exception_catcher, args=(simulation_loop, population, screen, clock, fps))
+    thread = threading.Thread(
+        target=exception_catcher, args=(simulation_loop, population, screen, clock, fps)
+    )
     thread.start()
-        
+
 
 if __name__ == "__main__":
     from game import *
@@ -109,27 +126,32 @@ if __name__ == "__main__":
     box_sight = np.ceil(sight / grid_size)
 
     # Parameters
-    env = EnvParameters(boid_count=200, shape=(size, size))
-    boid = BoidParameters()
+    pars = Parameters(boid_count=200, shape=(size, size))
 
     iterations_left = 100000000
 
     fps = 60
 
     # Init population
-    population = Simulation(env, boid, grid_size=(grid_size, grid_size), box_sight_radius=box_sight)
+    population = Simulation(
+        pars,
+        grid_size=(grid_size, grid_size),
+        box_sight_radius=box_sight,
+        multithreaded=not DEBUG_MODE,
+    )
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[1400, 800], boid_parameters=boid)
+    screen, clock = init_pygame(resolution=[1920, 1080], simulation_pars=pars, do_sliders=not DEBUG_MODE)
 
-    if FUCK_IPYTHON:
+    if not DEBUG_MODE:
         simulation_loop(population, screen, clock, fps)
-
     else:
+        import pdb
+
         start()
         embed()
 
     stop = True
-    
+
     # Clean up
     exit_pygame()

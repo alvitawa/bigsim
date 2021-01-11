@@ -6,13 +6,14 @@ from sliders import LabeledSlider
 import numpy as np
 import math
 
-import data
-from data import BoidParameters, Simulation
+from sklearn.mixture import GaussianMixture
 
-OCEAN_COLOR = (49, 36, 131) # (255, 255, 255) 
+import data
+from data import Simulation
+
+OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
-SLIDERS_OFF = False
 SLIDABLE_PARAMETERS = [
     "speed",
     "agility",
@@ -25,12 +26,30 @@ SLIDABLE_PARAMETERS = [
     "obstacle_weight",
     "obstacle_range",
 ]
-if SLIDERS_OFF:
-    SLIDABLE_PARAMETERS = []
+
+def init_globals():
+    global GM
+    global K
+
+    global COLORS
+
+    K = 5
+
+    # Init K different colors
+    COLORS = np.random.choice(range(256), size=3*K).reshape(K, 3)
+
+    GM = GaussianMixture(n_components=K, 
+                     max_iter=1000, 
+                     tol=1e-4,
+                     init_params='random')
+
+    GM.fit(np.random.rand(K, 2))
 
 
 # Set up pygame
-def init_pygame(boid_parameters, resolution=[1080, 720]):
+def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
+    init_globals()
+
     pygame.init()
 
     pygame.display.set_caption("Bad Boids 4 Life Simulator")
@@ -42,11 +61,12 @@ def init_pygame(boid_parameters, resolution=[1080, 720]):
     global sliders
     sliders = []
 
-    for n, par in enumerate(SLIDABLE_PARAMETERS):
-        slider = LabeledSlider(
-            screen, 10, resolution[1] - 60 - n * 40, par, initial=boid_parameters[par], min=0, max=14
-        )
-        sliders.append(slider)
+    if do_sliders:
+        for n, par in enumerate(SLIDABLE_PARAMETERS):
+            slider = LabeledSlider(
+                screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation_pars[par], min=0, max=14
+            )
+            sliders.append(slider)
 
     return screen, clock
 
@@ -61,7 +81,7 @@ def check_input(population):
     # Update sliders
     for par, slider in zip(SLIDABLE_PARAMETERS, sliders):
         slider.update(events)
-        population.boid[par] = slider.get_value()
+        population.pars[par] = slider.get_value()
 
     # Keyboard presses
     for event in events:
@@ -77,7 +97,7 @@ def check_input(population):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # left click
                 pos = np.array(pygame.mouse.get_pos())
-                scaled = pos / np.array(pygame.display.get_window_size()) * population.env.shape
+                scaled = pos / np.array(pygame.display.get_window_size()) * population.pars.shape
 
                 new_shape = np.array(population.obstacles.shape)
                 new_shape[0] += 1
@@ -102,11 +122,31 @@ def draw_number(screen, number):
         screen.blit(text, (0,0))
         # pygame.display.update()
 
+def positions_to_colors(positions):
+    global GM
+    global K
+    global COLORS
+
+    # New GMM based on GMM of last iteration
+    GM = GaussianMixture(n_components=K, 
+                        max_iter=1000, 
+                        tol=1e-4,
+                        means_init=GM.means_,
+                        weights_init=GM.weights_,)
+    GM.fit(positions)
+    probs = GM.predict_proba(positions)
+
+    # Convert probabilities to colors
+    return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)
+
 def draw_population(population: Simulation, screen):
+    scaling = np.array(pygame.display.get_window_size()) / population.pars.shape
 
-    scaling = np.array(pygame.display.get_window_size()) / population.env.shape
+    # Coloring with GMM
+    positions = population.population[:,0,:]
+    colors = positions_to_colors(positions)
 
-    for boid in population.population:
+    for boid, boid_color in zip(population.population, colors):
         location = tuple((boid[0] * scaling))
 
         # xness = location[0] / pygame.display.get_window_size()[0]
@@ -131,7 +171,7 @@ def draw_population(population: Simulation, screen):
         else:
             rotation = -np.arccos(boid[1][0])
 
-        draw_triangle(screen, boid[0] * scaling, rotation, BOID_COLOR)
+        draw_triangle(screen, boid[0] * scaling, rotation, boid_color)
 
         # print(boid[1][0])
 
@@ -157,7 +197,7 @@ def update_screen():
 
 
 
-def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=10, width=4):
+def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=30, width=15):
     head_up_down = np.array(
         [[0.5 * length, 0],
         [0.25 * length, 0.5 * width],

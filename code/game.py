@@ -12,7 +12,7 @@ from data import BoidParameters, Population
 OCEAN_COLOR = (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
-SLIDERS_OFF = True
+SLIDERS_OFF = False
 SLIDABLE_PARAMETERS = [
     "speed",
     "agility",
@@ -22,6 +22,8 @@ SLIDABLE_PARAMETERS = [
     "cohesion_range",
     "alignment_weight",
     "alignment_range",
+    "obstacle_weight",
+    "obstacle_range",
 ]
 if SLIDERS_OFF:
     SLIDABLE_PARAMETERS = []

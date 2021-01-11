@@ -16,6 +16,10 @@ from dataclasses import dataclass
 def exponential_weight_function(distances, inner_diameter, outer_diameter):
     pass
 
+def gausst(distances, range, weight):
+    result = stats.norm.pdf(distances / range) * np.exp(weight)
+    return result
+
 def gaussian_pos_wf(distances, pars):
     cohesion = stats.norm.pdf(distances/pars.cohesion_range)*np.exp(pars.cohesion_weight)
     separation = stats.norm.pdf(distances/pars.separation_range)*np.exp(pars.separation_weight)
@@ -24,6 +28,8 @@ def gaussian_pos_wf(distances, pars):
 def gaussian_dir_wf(distances, pars):
     return stats.norm.pdf(distances/pars.alignment_range)*np.exp(pars.alignment_weight)
 
+def gaussian_obs_wf(distances, pars):
+    return - stats.norm.pdf(distances/pars.obstacle_range) * np.exp(pars.obstacle_weight)
     
 def sq_pos_wf(distances, pars):
     close = distances < pars.separation_range
@@ -46,14 +52,25 @@ class BoidParameters:
     cohesion_range: float = 0.4
     alignment_weight: float = 0.5
     alignment_range: float = 0.4
+
+    obstacle_weight: float = 100
+    obstacle_range: float = 0.7
+
     pos_wf: Callable = gaussian_pos_wf
     dir_wf: Callable = gaussian_dir_wf
+    obs_wf: Callable = gaussian_obs_wf
 
     def position_weights(self, distances):
         return self.pos_wf(distances, self)
 
     def direction_weights(self, distances):
         return self.dir_wf(distances, self)
+
+    def position_weights(self, distances):
+        return self.pos_wf(distances, self)
+
+    def obstacle_weights(self, distances):
+        return self.obs_wf(distances, self)
 
     def __getitem__(self, index):
         return getattr(self, index)
@@ -133,7 +150,7 @@ class Population:
                                         population=self.population, 
                                         grid_coordinates=grid_coordinates, 
                                         box_sight_radius=self.box_sight_radius, 
-                                        boid_parameters=self.boid), 
+                                        boid_parameters=self.boid, obstacles=self.obstacles), 
                                 self.boxes)
 
             for idx, new in results:
@@ -151,7 +168,7 @@ class Population:
         #     results = pool.map(task, parameters)
 
         
-def local_update(inner, outer, pars: BoidParameters):
+def local_update(inner, outer, pars: BoidParameters, obstacles):
 
     # Outer coordinates relative to each inner position
     router = outer[:, None, 0, :] - inner[:, 0, :]
@@ -176,8 +193,24 @@ def local_update(inner, outer, pars: BoidParameters):
     directional_target = weighed_directions.sum(axis=0)
 
     # import pdb; pdb.set_trace()
+
+    # --- OBSTACLES ---
+    rel_obstacles = obstacles - inner[:, 0, :]
+
+    distances = np.power(rel_obstacles, 2).sum(axis=-1)**0.5
+
+    # Go towards/away from other fish
+    obs_weights = pars.obstacle_weights(distances) # (distances < 1)
+
+    weighed_positions = rel_obstacles * obs_weights[:, :, None]
+
+    ## Separation + Cohesion
+    obstacle_target = weighed_positions.sum(axis=0)
+
+
+    # --- COMBINE --
     
-    vectors = [positional_target, directional_target]
+    vectors = [positional_target, directional_target, obstacle_target]
 
     deltas = sum(vectors)
     # deltas = sum(w * v / np.linalg.norm(v, axis=1)[:, None] for v, w in zip(vectors, pars.weights))
@@ -194,11 +227,11 @@ def local_update(inner, outer, pars: BoidParameters):
 
     return updated_inner
 
-def task(assigned_box, population, grid_coordinates, box_sight_radius, boid_parameters):
+def task(assigned_box, population, grid_coordinates, box_sight_radius, boid_parameters, obstacles):
     inner_idx = np.all(np.equal(grid_coordinates, assigned_box.T), axis=1)
 
     outer_idx = np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= box_sight_radius
 
-    new_inner = local_update(population[inner_idx], population[outer_idx], boid_parameters)
+    new_inner = local_update(population[inner_idx], population[outer_idx], boid_parameters, obstacles)
 
     return inner_idx, new_inner

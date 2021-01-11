@@ -11,7 +11,7 @@ FUCK_IPYTHON = True
 
 stop = False
 exc_info = None
-threads = 8
+threads = 6
 
 def simulation_loop(population, screen, clock, fps):
     global stop
@@ -102,17 +102,17 @@ if __name__ == "__main__":
 
     size = 10
 
-    sight = 4
+    sight = 3
     global grid_size
-    grid_size = 5
+    grid_size = 2.5
 
     box_sight = np.ceil(sight / grid_size)
 
     # Parameters
-    env = EnvParameters(boid_count=1000, shape=(size, size))
+    env = EnvParameters(boid_count=200, shape=(size, size))
     boid = BoidParameters()
 
-    iterations_left = 1000
+    iterations_left = 100000000
 
     fps = 60
 

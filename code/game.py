@@ -25,6 +25,10 @@ SLIDABLE_PARAMETERS = [
     "alignment_range",
     "obstacle_weight",
     "obstacle_range",
+    "shark_weight",
+    "shark_range",
+    "shark_speed",
+    "shark_agility"
 ]
 
 def init_globals():
@@ -64,7 +68,7 @@ def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
     if do_sliders:
         for n, par in enumerate(SLIDABLE_PARAMETERS):
             slider = LabeledSlider(
-                screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation_pars[par], min=0, max=14
+                screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation_pars[par], min=0, max=2
             )
             sliders.append(slider)
 
@@ -147,8 +151,6 @@ def draw_population(population: Simulation, screen):
     colors = positions_to_colors(positions)
 
     for boid, boid_color in zip(population.population, colors):
-        location = tuple((boid[0] * scaling))
-
         # xness = location[0] / pygame.display.get_window_size()[0]
         # if math.isnan(xness):
         #     xness = 0
@@ -171,7 +173,7 @@ def draw_population(population: Simulation, screen):
         else:
             rotation = -np.arccos(boid[1][0])
 
-        draw_triangle(screen, boid[0] * scaling, rotation, boid_color)
+        draw_fish(screen, boid[0] * scaling, rotation, boid_color, 15, 7)
 
         # print(boid[1][0])
 
@@ -187,6 +189,13 @@ def draw_population(population: Simulation, screen):
 
         pygame.draw.circle(screen, (245, 40, 40), location, 6)
 
+    for shark in population.sharks:
+        if shark[1][1] >= 0:
+            rotation = np.arccos(shark[1][0])
+        else:
+            rotation = -np.arccos(shark[1][0])
+
+        draw_fish(screen, shark[0] * scaling, rotation, (117,57,57), 120, 40)
 
     return True
 
@@ -197,7 +206,7 @@ def update_screen():
 
 
 
-def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=30, width=15):
+def draw_fish(surface, position, rotation, color=BOID_COLOR, length=30, width=15):
     head_up_down = np.array(
         [[0.5 * length, 0],
         [0.25 * length, 0.5 * width],

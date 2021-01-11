@@ -158,6 +158,7 @@ class Population:
         for _ in range(n):
             grid_coordinates = self.population[:, 0, :] // self.grid_size
 
+            results = []
             if self.multithreaded:
                 results = pool.map(
                     partial(
@@ -171,7 +172,6 @@ class Population:
                     self.boxes,
                 )
             else:
-                results = []
                 for box in self.boxes:
                     idx, new = task(
                         box,
@@ -183,8 +183,8 @@ class Population:
                     )
                     results.append((idx, new))
 
-                for idx, new in results:
-                    self.population[idx] = new
+            for idx, new in results:
+                self.population[idx] = new
 
             # wrapping
             self.population[:, 0, 0] %= self.pars.shape[0]
@@ -233,16 +233,19 @@ def local_update(inner, outer, pars: Parameters, obstacles):
 
     weighed_positions = rel_obstacles * obs_weights[:, :, None]
 
-    # Go away from walls
-    # pars.shape - inner[:, 0, :]
-    raise Exception()
-
-    ## Avoid points, sharks and walls
     obstacle_target = weighed_positions.sum(axis=0)
+
+    # # Go away from walls    
+    # left_wall_target = pars.obstacle_weights(inner[:, 0, :])*inner[:, 0, :] # Not square distance!
+    # right_wall_relative = pars.shape - inner[:, 0, :]
+    # right_wall_target = pars.obstacle_weights(right_wall_relative) * right_wall_relative
+    
+    # wall_target = left_wall_target.sum(axis=0) + right_wall_target.sum(axis=0)
+
 
     # --- COMBINE --
 
-    vectors = [positional_target, directional_target, obstacle_target]
+    vectors = [positional_target, directional_target, obstacle_target, ]
 
     deltas = sum(vectors)
     # deltas = sum(w * v / np.linalg.norm(v, axis=1)[:, None] for v, w in zip(vectors, pars.weights))

@@ -12,11 +12,11 @@ import configparser
 config = configparser.ConfigParser()
 config.read("config.ini")
 
-DEBUG_MODE = config["DEFAULT"]["debug"]
+DEBUG_MODE = bool(config["DEFAULT"]["debug"] == 'True')
 
 
 stop = False
-exc_info = None
+exc = None
 threads = 6
 
 
@@ -98,12 +98,12 @@ def simulation_loop(population, screen, clock, fps):
 
 
 def exception_catcher(f, *args, **kwargs):
-    global exc_info
+    global exc
 
     try:
         f(*args, **kwargs)
     except Exception as e:
-        exc_info = sys.exc_info()
+        exc = sys.exc_info()[2]
         print(e)
 
 

@@ -64,21 +64,28 @@ def identity_wf(distances, _=None):
 class Parameters:
     shape: Any = (10, 7)
     boid_count: int = 300
+    shark_count: int = 5
 
-    speed: float = 0.04
-    agility: float = 0.1
+    speed: float = 0.05
+    agility: float = 0.2
 
-    separation_weight: float = 4
-    separation_range: float = 0.1
+    separation_weight: float = 1.4
+    separation_range: float = 0.2
 
-    cohesion_weight: float = 1
-    cohesion_range: float = 0.4
+    cohesion_weight: float = 1.4
+    cohesion_range: float = 1.0
 
-    alignment_weight: float = 0.5
-    alignment_range: float = 0.4
+    alignment_weight: float = 1.0
+    alignment_range: float = 0.8
 
-    obstacle_weight: float = 100
-    obstacle_range: float = 0.7
+    obstacle_weight: float = 2
+    obstacle_range: float = 0.1
+
+    shark_weight: float = 1.8
+    shark_range: float = 0.7
+
+    shark_speed: float = 0.05
+    shark_agility: float = 0.09
 
     pos_wf: Callable = gaussian_pos_wf
     dir_wf: Callable = gaussian_dir_wf
@@ -117,8 +124,19 @@ def generate_population(n, env_size):
 
 
 def generate_obstacles(n, env_size):
-    obstacles = np.random.rand(n, 1, 2)
-    obstacles[:, 0, :] *= env_size
+
+    x_zeros = np.zeros(n)
+    y_zeros = np.zeros(n)
+
+    x_maxes = np.array([env_size[0]] * n)
+    y_maxes = np.array([env_size[1]] * n)
+
+    x_coords = np.linspace(0, env_size[0], n)
+    y_coords = np.linspace(0, env_size[1], n)
+
+    wtf = np.hstack([np.dstack((x_zeros, y_coords)), np.dstack((x_maxes, y_coords)), np.dstack((x_coords, y_zeros)), np.dstack((x_coords, y_maxes))])
+
+    obstacles = wtf.reshape([len(wtf[0]), 1, 2])
 
     return obstacles
 
@@ -152,10 +170,10 @@ class Simulation:
         self.population = generate_population(self.pars.boid_count, self.pars.shape)
 
         # make sharks
-        self.sharks = generate_population(self.pars.boid_count, self.pars.shape)
+        self.sharks = generate_population(self.pars.shark_count, self.pars.shape)
 
         # make obstacles
-        self.obstacles = generate_obstacles(0, self.pars.shape)
+        self.obstacles = generate_obstacles(30, self.pars.shape)
 
     def iterate(self, pool, n=1):
         for _ in range(n):
@@ -171,6 +189,7 @@ class Simulation:
                         box_sight_radius=self.box_sight_radius,
                         pars=self.pars,
                         obstacles=self.obstacles,
+                        sharks=self.sharks
                     ),
                     self.boxes,
                 )
@@ -192,6 +211,11 @@ class Simulation:
             # wrapping
             self.population[:, 0, 0] %= self.pars.shape[0]
             self.population[:, 0, 1] %= self.pars.shape[1]
+
+            self.sharks = move_sharks(self.sharks, self.population, self.obstacles, self.pars)
+
+            self.sharks[:, 0, 0] %= self.pars.shape[0]
+            self.sharks[:, 0, 1] %= self.pars.shape[1]
 
             # solid walls
             # self.population[:, 0, 0] = np.clip(self.population[:, 0, 0], 0, self.pars.shape[0])
@@ -226,14 +250,20 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     target_alignment = (neighbours[:, None, 1, :] * alignment_weights[:, :, None]).sum(axis=0)
 
     # --- Obstacles ---
-    obstacles_rel = obstacles - fish[:, 0, :]
+    obstacles_rel = sharks[:, None, 0, :] - fish[:, 0, :]
     obs_sqr_distances = np.power(obstacles_rel, 2).sum(axis=-1)
 
     obstacle_weights = stats.norm.pdf(obs_sqr_distances / (pars.obstacle_range*2)**2) # range indicates 2 deviations (98%)
     obstacle_target = -1 * (obstacles_rel * obstacle_weights[:, :, None]).sum(axis=0)
 
     # --- Predators ---
-    # todo
+    sharks_rel = obstacles - fish[:, 0, :]
+    shark_sqr_distances = np.power(sharks_rel, 2).sum(axis=-1)
+
+    shark_weights = stats.norm.pdf(shark_sqr_distances / (pars.shark_range*2)**2) # range indicates 2 deviations (98%)
+    sharks_target = -1 * (sharks_rel * shark_weights[:, :, None]).sum(axis=0)
+
+    # We could also do like turn away from the direction of the shark
 
     # --- Combine vectors ---
 
@@ -243,9 +273,10 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     alignment = stable_norm(target_alignment) * pars.alignment_weight
 
     obstacle = stable_norm(obstacle_target) * pars.obstacle_weight
+    shark = stable_norm(sharks_target) * pars.shark_weight
 
     # Combine them to make the steering direction
-    vectors = np.array([cohesion, seperation, alignment, obstacle])
+    vectors = np.array([cohesion, seperation, alignment, obstacle, shark])
 
     steer_direction = sum(list(vectors)) # this would be nicer with np.sum(some_axis)
     steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
@@ -269,14 +300,49 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
 
     return updated_fish
 
+def move_sharks(sharks, fish, obstacles, pars: Parameters):
+    # Chase: move to weighted center of mass of fish
+    fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
+    sqr_distances = np.power(fish_rel, 2).sum(axis=-1)
 
-def task(assigned_box, population, grid_coordinates, box_sight_radius, pars, obstacles):
+    fish_weights = stats.norm.pdf(sqr_distances / (pars.cohesion_range*2)**2) # fuck it use cohesion weight for now
+    center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
+
+    # Todo: we could also add obstacle avoidance etc.
+
+    # --- Combine vectors ---
+
+    # Normalize directions and weigh them
+    chase = stable_norm(center_off_mass) * pars.cohesion_weight
+
+    # Combine them to make the steering direction
+    vectors = np.array([chase])
+
+    steer_direction = sum(list(vectors)) # this would be nicer with np.sum(some_axis)
+    steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
+
+    # print("Steer: ", steer_normed.shape)
+
+    # Combine current direction and steering direction
+    updated_shark = np.copy(sharks)
+
+    new_direction = sharks[:, 1, :] + steer_normed * pars.shark_agility
+    # print("New Dir: ", new_direction.shape)
+    updated_shark[:, 1, :] = new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
+
+    # move da fish
+    updated_shark[:, 0, :] += updated_shark[:, 1, :] * pars.shark_speed
+
+    return updated_shark
+
+
+def task(assigned_box, population, grid_coordinates, box_sight_radius, pars, obstacles, sharks):
     inner_idx = np.all(np.equal(grid_coordinates, assigned_box.T), axis=1)
 
     outer_idx = (
         np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= box_sight_radius
     )
 
-    new_inner = move_fish(population[inner_idx], population[outer_idx], obstacles, None, pars)
+    new_inner = move_fish(population[inner_idx], population[outer_idx], obstacles, sharks, pars)
 
     return inner_idx, new_inner

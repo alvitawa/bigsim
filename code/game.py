@@ -9,9 +9,9 @@ import math
 from sklearn.mixture import GaussianMixture
 
 import data
-from data import Population
+from data import Simulation
 
-OCEAN_COLOR = (49, 36, 131) # (255, 255, 255) 
+OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
 SLIDABLE_PARAMETERS = [
@@ -116,9 +116,9 @@ def draw_sliders():
         slider.draw()
 
 def draw_number(screen, number):
-        '''Displays a number on the screen'''
+        '''Displays a fps number on the screen'''
         font = pygame.font.SysFont('arial', 50)
-        text = font.render(str(number), True, (0, 0, 0))
+        text = font.render(str(number), True, np.abs(np.array(OCEAN_COLOR)-255))
         screen.blit(text, (0,0))
         # pygame.display.update()
 
@@ -129,7 +129,7 @@ def positions_to_colors(positions):
 
     # New GMM based on GMM of last iteration
     GM = GaussianMixture(n_components=K, 
-                        max_iter=1000, 
+                        max_iter=10, 
                         tol=1e-4,
                         means_init=GM.means_,
                         weights_init=GM.weights_,)
@@ -139,8 +139,7 @@ def positions_to_colors(positions):
     # Convert probabilities to colors
     return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)
 
-def draw_population(population: Population, screen):
-
+def draw_population(population: Simulation, screen):
     scaling = np.array(pygame.display.get_window_size()) / population.pars.shape
 
     # Coloring with GMM
@@ -198,7 +197,7 @@ def update_screen():
 
 
 
-def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=10, width=4):
+def draw_triangle(surface, position, rotation, color=BOID_COLOR, length=30, width=15):
     head_up_down = np.array(
         [[0.5 * length, 0],
         [0.25 * length, 0.5 * width],

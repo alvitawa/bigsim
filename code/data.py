@@ -1,3 +1,4 @@
+from sys import is_finalizing
 from typing import Any, Callable
 from dataclasses import field
 from boid import Boid
@@ -122,7 +123,7 @@ def generate_obstacles(n, env_size):
     return obstacles
 
 
-class Population:
+class Simulation:
     """
         This class is for all boids.
     """
@@ -134,7 +135,6 @@ class Population:
         box_sight_radius=2,
         multithreaded=True,
     ):
-
         # Save simulation parameters
         self.pars = pars
 
@@ -151,8 +151,11 @@ class Population:
         # make population
         self.population = generate_population(self.pars.boid_count, self.pars.shape)
 
+        # make sharks
+        self.sharks = generate_population(self.pars.boid_count, self.pars.shape)
+
         # make obstacles
-        self.obstacles = generate_obstacles(5, self.pars.shape)
+        self.obstacles = generate_obstacles(0, self.pars.shape)
 
     def iterate(self, pool, n=1):
         for _ in range(n):
@@ -197,64 +200,75 @@ class Population:
         # with Pool(processes=4) as pool:
         #     results = pool.map(task, parameters)
 
+def stable_norm(array):
+    """
+    Makes it 0 if not finite
+    """
+    normed = array / np.linalg.norm(array, axis=1)[:, None]
+    normed[np.invert(np.isfinite(normed))] = 0
+    return normed
 
-def local_update(inner, outer, pars: Parameters, obstacles):
+def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
+    # --- Fish Schooling ---
+    neighbours_rel = neighbours[:, None, 0, :] - fish[:, 0, :]
+    sqr_distances = np.power(neighbours_rel, 2).sum(axis=-1)
 
-    # Outer coordinates relative to each inner position
-    router = outer[:, None, 0, :] - inner[:, 0, :]
+    # Cohesion: move to weighted center of mass of school
+    cohesion_weights = stats.norm.pdf(sqr_distances / (pars.cohesion_range*2)**2) # range indicates 2 deviations (98%)
+    center_off_mass = (neighbours_rel * cohesion_weights[:, :, None]).sum(axis=0)
 
-    distances = np.power(router, 2).sum(axis=-1) ** 0.5
+    # Seperation: move away from very close fish
+    seperation_weights = stats.norm.pdf(sqr_distances / (pars.separation_range*2)**2) # range indicates 2 deviations (98%)
+    move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
 
-    # Go towards/away from other fish
-    pos_weights = pars.position_weights(distances)  # (distances < 1)
+    # Alignment: align with nearby fish
+    alignment_weights = stats.norm.pdf(sqr_distances / (pars.alignment_range*2)**2) # range indicates 2 deviations (98%)
+    target_alignment = (neighbours[:, None, 1, :] * alignment_weights[:, :, None]).sum(axis=0)
 
-    weighed_positions = router * pos_weights[:, :, None]
+    # --- Obstacles ---
+    obstacles_rel = obstacles - fish[:, 0, :]
+    obs_sqr_distances = np.power(obstacles_rel, 2).sum(axis=-1)
 
-    ## Separation + Cohesion
-    positional_target = weighed_positions.sum(axis=0)
+    obstacle_weights = stats.norm.pdf(obs_sqr_distances / (pars.obstacle_range*2)**2) # range indicates 2 deviations (98%)
+    obstacle_target = -1 * (obstacles_rel * obstacle_weights[:, :, None]).sum(axis=0)
 
-    # Align direction with other fish
-    dir_weights = pars.direction_weights(distances)  # (1 < distances) & (distances < 4)
+    wall_target = None
+    # --- Predators ---
+    # todo
 
-    weighed_directions = outer[:, None, 1, :] * dir_weights[:, :, None]
+    # --- Combine vectors ---
 
-    ## Alignment
-    directional_target = weighed_directions.sum(axis=0)
+    # Normalize directions and weigh them
+    cohesion = (center_off_mass) * pars.cohesion_weight
+    seperation = (move_away_target) * pars.separation_weight
+    alignment = (target_alignment) * pars.alignment_weight
 
-    # import pdb; pdb.set_trace()
+    obstacle = (obstacle_target) * pars.obstacle_weight
 
-    # --- OBSTACLES ---
-    rel_obstacles = obstacles - inner[:, 0, :]
+    # Combine them to make the steering direction
+    vectors = np.array([cohesion, seperation, alignment, obstacle])
 
-    distances = np.power(rel_obstacles, 2).sum(axis=-1) ** 0.5
+    steer_direction = sum(list(vectors)) # this would be nicer with np.sum(some_axis)
+    steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
 
-    # Go away from points
-    obs_weights = pars.obstacle_weights(distances)  # (distances < 1)
+    # print("Steer: ", steer_normed.shape)
 
-    weighed_positions = rel_obstacles * obs_weights[:, :, None]
+    # Combine current direction and steering direction
+    updated_fish = np.copy(fish)
 
-    obstacle_target = weighed_positions.sum(axis=0)
+    new_direction = fish[:, 1, :] + steer_normed * pars.agility
+    # print("New Dir: ", new_direction.shape)
+    updated_fish[:, 1, :] = new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
 
-    # --- COMBINE --
+    # move da fish
+    updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed
 
-    vectors = [positional_target, directional_target, obstacle_target, wall_target]
-
-    raise Exception()
-
-    deltas = sum(vectors)
-    # deltas = sum(w * v / np.linalg.norm(v, axis=1)[:, None] for v, w in zip(vectors, pars.weights))
-    deltas /= np.linalg.norm(deltas, axis=1)[:, None]
-
-    updated_inner = np.copy(inner)
-    updated_inner[:, 1, :] += pars.agility * deltas
-    updated_inner[:, 1, :] /= np.linalg.norm(updated_inner[:, 1, :], axis=1)[:, None]
-    updated_inner[:, 0, :] += pars.speed * updated_inner[:, 1, :]
-
-    nans = np.argwhere(np.isnan(updated_inner))
+    # check for error
+    nans = np.argwhere(np.isnan(updated_fish))
     if nans.shape[0] > 0:
         raise Exception(f"{nans.shape[0]} NaN's encountered in local_update")
 
-    return updated_inner
+    return updated_fish
 
 
 def task(assigned_box, population, grid_coordinates, box_sight_radius, pars, obstacles):
@@ -264,8 +278,6 @@ def task(assigned_box, population, grid_coordinates, box_sight_radius, pars, obs
         np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= box_sight_radius
     )
 
-    new_inner = local_update(
-        population[inner_idx], population[outer_idx], pars, obstacles
-    )
+    new_inner = move_fish(population[inner_idx], population[outer_idx], obstacles, None, pars)
 
     return inner_idx, new_inner

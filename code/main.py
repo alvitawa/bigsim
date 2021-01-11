@@ -10,6 +10,8 @@ from IPython import embed
 
 import configparser
 
+from warnings import filterwarnings
+
 config = configparser.ConfigParser()
 config.read("config.ini")
 
@@ -19,7 +21,6 @@ DEBUG_MODE = bool(config["DEFAULT"]["debug"] == 'True')
 stop = False
 exc = None
 threads = 6
-
 
 def simulation_loop(population, screen, clock, fps):
     global stop
@@ -130,14 +131,14 @@ if __name__ == "__main__":
     box_sight = np.ceil(sight / grid_size)
 
     # Parameters
-    pars = Parameters(boid_count=200, shape=(size, size))
+    pars = Parameters(boid_count=50, shape=(size, size))
 
     iterations_left = 100000000
 
     fps = 60
 
     # Init population
-    population = Population(
+    population = Simulation(
         pars,
         grid_size=(grid_size, grid_size),
         box_sight_radius=box_sight,
@@ -145,12 +146,12 @@ if __name__ == "__main__":
     )
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[1400, 800], simulation_pars=pars, do_sliders=not DEBUG_MODE)
+    screen, clock = init_pygame(resolution=[1200, 800], simulation_pars=pars, do_sliders=not DEBUG_MODE)
 
     if not DEBUG_MODE:
         simulation_loop(population, screen, clock, fps)
     else:
-
+        filterwarnings('ignore')
         start()
         embed()
 

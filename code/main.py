@@ -27,15 +27,10 @@ def simulation_loop(population, screen, clock, fps):
     computation_time = 0
     render_time = 0
 
-    fps_measurer = 0
-    fpers = 0
-    second = 0
-
     # Simulation loop!
     big_tic = time.perf_counter()
     with Pool(processes=threads) as pool:
         while not stop:
-            begin = time.time()
 
             quit = check_input(population)
 
@@ -45,7 +40,7 @@ def simulation_loop(population, screen, clock, fps):
             draw_sliders()
 
             # Fps counter
-            draw_number(screen, fps_measurer)
+            draw_number(screen, int(clock.get_fps()))
 
             # Flip buffers
             update_screen()
@@ -68,15 +63,6 @@ def simulation_loop(population, screen, clock, fps):
             iterations += 1
             if iterations >= iterations_left:
                 break
-
-            fpers += 1
-
-            # Display fps
-            second += time.time() - begin
-            if second > 1:
-                fps_measurer = fpers
-                fpers = 0
-                second = 0
 
     big_toc = time.perf_counter()
 
@@ -141,7 +127,7 @@ if __name__ == "__main__":
     )
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[1920, 1080], simulation_pars=pars, do_sliders=not DEBUG_MODE)
+    screen, clock = init_pygame(resolution=[1080, 720], simulation_pars=pars, do_sliders=not DEBUG_MODE)
 
     if not DEBUG_MODE:
         simulation_loop(population, screen, clock, fps)

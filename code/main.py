@@ -1,6 +1,7 @@
 from boid import *
 from data import *
 
+import pdb
 import sys
 import time
 import timeit
@@ -103,7 +104,7 @@ def exception_catcher(f, *args, **kwargs):
     try:
         f(*args, **kwargs)
     except Exception as e:
-        exc = sys.exc_info()[2]
+        exc = sys.exc_info()
         print(e)
 
 
@@ -114,6 +115,8 @@ def start():
     )
     thread.start()
 
+def debug():
+    pdb.post_mortem(exc[2])
 
 if __name__ == "__main__":
     from game import *
@@ -147,7 +150,6 @@ if __name__ == "__main__":
     if not DEBUG_MODE:
         simulation_loop(population, screen, clock, fps)
     else:
-        import pdb
 
         start()
         embed()

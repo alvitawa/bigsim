@@ -235,17 +235,11 @@ def local_update(inner, outer, pars: Parameters, obstacles):
 
     obstacle_target = weighed_positions.sum(axis=0)
 
-    # # Go away from walls    
-    # left_wall_target = pars.obstacle_weights(inner[:, 0, :])*inner[:, 0, :] # Not square distance!
-    # right_wall_relative = pars.shape - inner[:, 0, :]
-    # right_wall_target = pars.obstacle_weights(right_wall_relative) * right_wall_relative
-    
-    # wall_target = left_wall_target.sum(axis=0) + right_wall_target.sum(axis=0)
-
-
     # --- COMBINE --
 
-    vectors = [positional_target, directional_target, obstacle_target, ]
+    vectors = [positional_target, directional_target, obstacle_target, wall_target]
+
+    raise Exception()
 
     deltas = sum(vectors)
     # deltas = sum(w * v / np.linalg.norm(v, axis=1)[:, None] for v, w in zip(vectors, pars.weights))

@@ -131,7 +131,7 @@ if __name__ == "__main__":
     box_sight = np.ceil(sight / grid_size)
 
     # Parameters
-    pars = Parameters(boid_count=50, shape=(size, size))
+    pars = Parameters(boid_count=100, shark_count=1, shape=(size, size))
 
     iterations_left = 100000000
 

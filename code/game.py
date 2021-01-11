@@ -12,7 +12,6 @@ from data import Population
 OCEAN_COLOR = (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
-SLIDERS_OFF = False
 SLIDABLE_PARAMETERS = [
     "speed",
     "agility",
@@ -25,12 +24,10 @@ SLIDABLE_PARAMETERS = [
     "obstacle_weight",
     "obstacle_range",
 ]
-if SLIDERS_OFF:
-    SLIDABLE_PARAMETERS = []
 
 
 # Set up pygame
-def init_pygame(simulation_pars, resolution=[1080, 720]):
+def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
     pygame.init()
 
     pygame.display.set_caption("Bad Boids 4 Life Simulator")
@@ -42,11 +39,12 @@ def init_pygame(simulation_pars, resolution=[1080, 720]):
     global sliders
     sliders = []
 
-    for n, par in enumerate(SLIDABLE_PARAMETERS):
-        slider = LabeledSlider(
-            screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation_pars[par], min=0, max=14
-        )
-        sliders.append(slider)
+    if do_sliders:
+        for n, par in enumerate(SLIDABLE_PARAMETERS):
+            slider = LabeledSlider(
+                screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation_pars[par], min=0, max=14
+            )
+            sliders.append(slider)
 
     return screen, clock
 

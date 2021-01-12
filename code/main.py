@@ -5,6 +5,8 @@ import pdb
 import sys
 import time
 import timeit
+import pickle
+import json
 import threading
 from IPython import embed
 
@@ -16,13 +18,14 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 DEBUG_MODE = bool(config["DEFAULT"]["debug"] == 'True')
+DEFAULT_SAVE = config["DEFAULT"]["save"]
 
 
 stop = False
 exc = None
 threads = 6
 
-def simulation_loop(population, screen, clock, fps):
+def simulation_loop(simulation, screen, clock, fps):
     global stop
 
     iterations = 0
@@ -30,25 +33,20 @@ def simulation_loop(population, screen, clock, fps):
     computation_time = 0
     render_time = 0
 
-    fps_measurer = 0
-    fpers = 0
-    second = 0
-
     # Simulation loop!
     big_tic = time.perf_counter()
     with Pool(processes=threads) as pool:
         while not stop:
-            begin = time.time()
 
-            quit = check_input(population)
+            quit = check_input(simulation)
 
             tic = time.perf_counter()  # Rendering
             clear_screen(screen)
-            draw_population(population, screen)
+            draw_simulation(simulation, screen)
             draw_sliders()
 
             # Fps counter
-            draw_number(screen, fps_measurer)
+            draw_number(screen, int(clock.get_fps()))
 
             # Flip buffers
             update_screen()
@@ -58,7 +56,7 @@ def simulation_loop(population, screen, clock, fps):
             render_time += toc - tic
 
             tic = time.perf_counter()  # Computation
-            population.iterate(pool, 1)
+            simulation.iterate(pool, 1)
             toc = time.perf_counter()
 
             computation_time += toc - tic
@@ -71,15 +69,6 @@ def simulation_loop(population, screen, clock, fps):
             iterations += 1
             if iterations >= iterations_left:
                 break
-
-            fpers += 1
-
-            # Display fps
-            second += time.time() - begin
-            if second > 1:
-                fps_measurer = fpers
-                fpers = 0
-                second = 0
 
     big_toc = time.perf_counter()
 
@@ -110,14 +99,30 @@ def exception_catcher(f, *args, **kwargs):
 
 
 def start():
-    global simulation_loop, population, screen, clock, fps
+    global simulation_loop, simulation, screen, clock, fps
     thread = threading.Thread(
-        target=exception_catcher, args=(simulation_loop, population, screen, clock, fps)
+        target=exception_catcher, args=(simulation_loop, simulation, screen, clock, fps)
     )
     thread.start()
 
 def debug():
     pdb.post_mortem(exc[2])
+
+    
+def wpars(f=DEFAULT_SAVE):
+    global simulation
+    with open(f, 'w') as file:
+        json.dump(simulation.pars.to_dict(),  file, indent=4, sort_keys=True)
+
+def lpars(f=DEFAULT_SAVE):
+    global simulation
+    with open(f, 'r') as file:
+        simulation.pars = Parameters.from_json(file.read())
+
+
+def pars():
+    global simulation
+    return simulation.pars
 
 if __name__ == "__main__":
     from game import *
@@ -131,14 +136,14 @@ if __name__ == "__main__":
     box_sight = np.ceil(sight / grid_size)
 
     # Parameters
-    pars = Parameters(boid_count=100, shark_count=1, shape=(size, size))
+    pars = Parameters()
 
     iterations_left = 100000000
 
     fps = 60
 
-    # Init population
-    population = Simulation(
+    # Init simulation
+    simulation = Simulation(
         pars,
         grid_size=(grid_size, grid_size),
         box_sight_radius=box_sight,
@@ -146,12 +151,13 @@ if __name__ == "__main__":
     )
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[1200, 800], simulation_pars=pars, do_sliders=not DEBUG_MODE)
+    screen, clock = init_pygame(resolution=[1080, 720], simulation_pars=pars, do_sliders=not DEBUG_MODE)
 
     if not DEBUG_MODE:
-        simulation_loop(population, screen, clock, fps)
+        simulation_loop(simulation, screen, clock, fps)
     else:
         filterwarnings('ignore')
+
         start()
         embed()
 

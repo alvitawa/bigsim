@@ -22,15 +22,15 @@ SLIDABLE_PARAMETERS = [
     ("speed",               1),
     ("agility",             1),
     ("separation_weight",   15),
-    ("separation_range",    1),
+    ("separation_range",    3),
     ("cohesion_weight",     15),
-    ("cohesion_range",      1),
+    ("cohesion_range",      3),
     ("alignment_weight",    15),
-    ("alignment_range",     1),
+    ("alignment_range",     3),
     ("obstacle_weight",     15),
-    ("obstacle_range",      1),
+    ("obstacle_range",      3),
     ("shark_weight",        15),
-    ("shark_range",         1),
+    ("shark_range",         3),
     ("shark_speed",         1),
     ("shark_agility",       1),
 ]
@@ -120,14 +120,15 @@ def check_input(simulation):
                 pass
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1: # left click = select fish
-                pos = np.array(pygame.mouse.get_pos())
-                
+            pos = np.array(pygame.mouse.get_pos())
+            if event.button == 1: # left click = check buttons
+
                 # Check all buttons
                 for rectangle, button_function in BUTTON_DATA:
                     if is_in_rect(pos, rectangle):
                         button_function()
 
+            if event.button == 3: # right click = select fish
                 scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
 
                 fish_rel = simulation.population[:, 0, :] - scaled
@@ -135,7 +136,7 @@ def check_input(simulation):
 
                 data.selected_index = np.argmin(distances)
 
-            if event.button == 2: # right click place obstacle
+            if event.button == 2: # middle click place obstacle
                 pos = np.array(pygame.mouse.get_pos())
                 scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
 

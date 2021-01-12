@@ -47,7 +47,7 @@ def delete_fish(population, indexes):
 class Parameters:
     shape: Any = (10, 7)
     boid_count: int = 300
-    shark_count: int = 5
+    shark_count: int = 0
 
     speed: float = 0.05
     agility: float = 0.2
@@ -237,39 +237,45 @@ def stable_norm(array):
     normed[np.invert(np.isfinite(normed))] = 0
     return normed
 
+def distance_to_weights(sqr_distances, range):
+    if range == 0:
+        return np.zeros_like(sqr_distances)
+    return np.exp(-(sqr_distances / (range/2.0)**2))
+
 def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     # --- Fish Schooling ---
     neighbours_rel = neighbours[:, None, 0, :] - fish[:, 0, :]
-    distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
+    sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
 
     # Cohesion: move to weighted center of mass of school
-    cohesion_weights = stats.norm.pdf(distances / (pars.cohesion_range*2)) if (pars.cohesion_range != 0) else np.zeros_like(distances)
+    cohesion_weights = distance_to_weights(sqr_distances, pars.cohesion_range)
     center_off_mass = (neighbours_rel * cohesion_weights[:, :, None]).sum(axis=0)
 
+    # print(sqr_distances, pars.cohesion_range, cohesion_weights)
+
     # Seperation: move away from very close fish
-    seperation_weights = stats.norm.pdf(distances / (pars.separation_range*2)) if (pars.separation_range != 0) else np.zeros_like(distances)
+    seperation_weights = distance_to_weights(sqr_distances, pars.separation_range)
     move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
 
     # Alignment: align with nearby fish
-    alignment_weights = stats.norm.pdf(distances / (pars.alignment_range*2)) if (pars.alignment_range != 0) else np.zeros_like(distances)
+    alignment_weights = distance_to_weights(sqr_distances, pars.alignment_range)
     target_alignment = (neighbours[:, None, 1, :] * alignment_weights[:, :, None]).sum(axis=0)
 
     # --- Obstacles ---
     obstacles_rel = obstacles - fish[:, 0, :]
-    obs_distances = np.sqrt(np.power(obstacles_rel, 2).sum(axis=-1))
+    sqr_obs_distances = np.sqrt(np.power(obstacles_rel, 2).sum(axis=-1))
 
-    obstacle_weights = stats.norm.pdf(obs_distances / (pars.obstacle_range*2)) if (pars.obstacle_range != 0) else np.zeros_like(distances)
+    obstacle_weights = distance_to_weights(sqr_obs_distances, pars.obstacle_range)
     obstacle_target = -1 * (obstacles_rel * obstacle_weights[:, :, None]).sum(axis=0)
 
     wall_target = None
     # --- Predators ---
     sharks_rel = sharks[:, None, 0, :] - fish[:, 0, :]
-    shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
+    sqr_shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
 
-    shark_weights = stats.norm.pdf(shark_distances / (pars.shark_range*2)) if (pars.shark_range != 0) else np.zeros_like(distances)
+    shark_weights = distance_to_weights(sqr_shark_distances, pars.shark_range)
     sharks_target = -1 * (sharks_rel * shark_weights[:, :, None]).sum(axis=0)
     # We could also do like turn away from the direction of the shark
-
 
     # Normalize directions and weigh them
     cohesion = np.nan_to_num(center_off_mass * pars.cohesion_weight)

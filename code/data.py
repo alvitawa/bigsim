@@ -14,10 +14,7 @@ from scipy.spatial import distance_matrix
 from functools import partial
 
 from dataclasses import dataclass
-
-from dataclasses import dataclass
 from dataclasses_json import config, DataClassJsonMixin, dataclass_json
-
 
 def exponential_weight_function(distances, inner_diameter, outer_diameter):
     pass
@@ -258,8 +255,7 @@ def stable_norm(array):
     normed[np.invert(np.isfinite(normed))] = 0
     return normed
 
-
-def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
+def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     # --- Fish Schooling ---
     neighbours_rel = neighbours[:, None, 0, :] - fish[:, 0, :]
     distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
@@ -287,7 +283,7 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     )
 
     # --- Obstacles ---
-    obstacles_rel = sharks[:, None, 0, :] - fish[:, 0, :]
+    obstacles_rel = obstacles - fish[:, 0, :]
     obs_distances = np.sqrt(np.power(obstacles_rel, 2).sum(axis=-1))
 
     obstacle_weights = stats.norm.pdf(
@@ -297,25 +293,29 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
 
     wall_target = None
     # --- Predators ---
-    sharks_rel = obstacles - fish[:, 0, :]
+    sharks_rel = sharks[:, None, 0, :] - fish[:, 0, :]
     shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
 
     shark_weights = stats.norm.pdf(
         shark_distances / (pars.shark_range * 2)
     )  # range indicates 2 deviations (98%)
     sharks_target = -1 * (sharks_rel * shark_weights[:, :, None]).sum(axis=0)
-
     # We could also do like turn away from the direction of the shark
 
-    # --- Combine vectors ---
 
     # Normalize directions and weigh them
-    cohesion = center_off_mass * pars.cohesion_weight
-    seperation = move_away_target * pars.separation_weight
-    alignment = target_alignment * pars.alignment_weight
+    cohesion = np.nan_to_num(center_off_mass * pars.cohesion_weight)
+    seperation = np.nan_to_num(move_away_target * pars.separation_weight)
+    alignment = np.nan_to_num(target_alignment * pars.alignment_weight)
 
-    obstacle = obstacle_target * pars.obstacle_weight
-    shark = sharks_target * pars.shark_weight
+    obstacle = np.nan_to_num(obstacle_target * pars.obstacle_weight)
+    shark = np.nan_to_num(sharks_target * pars.shark_weight)
+
+    return cohesion, seperation, alignment, obstacle, shark
+
+def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
+    # --- Get vectors ---
+    cohesion, seperation, alignment, obstacle, shark = fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
 
     # Combine them to make the steering direction
     vectors = np.array([cohesion, seperation, alignment, obstacle, shark])
@@ -362,7 +362,7 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
     # --- Combine vectors ---
 
     # Normalize directions and weigh them
-    chase = stable_norm(center_off_mass) * pars.cohesion_weight
+    chase = np.nan_to_num(center_off_mass * pars.cohesion_weight)
 
     # Combine them to make the steering direction
     vectors = np.array([chase])

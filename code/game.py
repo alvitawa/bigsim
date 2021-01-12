@@ -264,7 +264,7 @@ def draw_population(population: Simulation, screen):
         else:
             rotation = -np.arccos(shark[1][0])
 
-        draw_fish(screen, shark[0] * scaling, rotation, (117,57,57), 120, 40)
+        draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 60, 30)
 
     return True
 
@@ -284,6 +284,33 @@ def draw_fish(surface, position, rotation, color=BOID_COLOR, length=30, width=15
         [-0.5 * length, -0.5 * width],
         [-0.25 * length, -0.1 * width],
         [0.25 * length, -0.5 * width]
+        ]
+    )
+
+    c, s = np.cos(rotation), np.sin(rotation)
+    R = np.array(((c, -s), (s, c)))
+
+    rotated = R.dot(head_up_down.T).T
+
+    rotated += position
+
+    positions = [(int(np.round(a)), int(np.round(b))) for a, b in rotated]
+
+    pygame.draw.polygon(surface, color, positions, width=0)
+
+def draw_shark(surface, position, rotation, color, length, width):
+    head_up_down = np.array(
+        [[1.2 * length, -0.1 * width],
+        [0.7 * length, 0 * width],
+        [1.2 * length, 0.1 * width],
+        [0.6 * length, 0.35 * width],
+        [0.45 * length, 0.6 * width],
+        [0.4 * length, 0.35 * width],
+        [-0.25 * length, 0.1 * width],
+        [-0.4 * length, 0.5 * width],
+        [-0.5 * length, -0.5 * width],
+        [-0.25 * length, -0.1 * width],
+        [0.25 * length, -0.35 * width]
         ]
     )
 

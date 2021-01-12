@@ -7,6 +7,7 @@ import numpy as np
 import math
 
 from sklearn.mixture import GaussianMixture
+import warnings
 
 import data
 from data import Simulation
@@ -43,11 +44,15 @@ def init_globals():
     COLORS = np.random.choice(range(256), size=3*K).reshape(K, 3)
 
     GM = GaussianMixture(n_components=K, 
-                     max_iter=1000, 
-                     tol=1e-4,
-                     init_params='random')
+                    max_iter=1000, 
+                    tol=1e-4,
+                    init_params='random',
+                    verbose=0)
 
-    GM.fit(np.random.rand(K, 2))
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        GM.fit(np.random.rand(K, 2))
 
 
 # Set up pygame
@@ -136,8 +141,14 @@ def positions_to_colors(positions):
                         max_iter=10, 
                         tol=1e-4,
                         means_init=GM.means_,
-                        weights_init=GM.weights_,)
-    GM.fit(positions)
+                        weights_init=GM.weights_,
+                        verbose=0)
+    
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        GM.fit(positions)
+
     probs = GM.predict_proba(positions)
 
     # Convert probabilities to colors

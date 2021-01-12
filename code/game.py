@@ -307,7 +307,7 @@ def draw_population(population: Simulation, screen):
         else:
             rotation = -np.arccos(shark[1][0])
 
-        draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 60, 30)
+        draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 60, 40)
 
     return True
 

@@ -91,26 +91,8 @@ def generate_population(n, env_size):
 
 
 def generate_obstacles(n, env_size):
-
-    x_zeros = np.zeros(n)
-    y_zeros = np.zeros(n)
-
-    x_maxes = np.array([env_size[0]] * n)
-    y_maxes = np.array([env_size[1]] * n)
-
-    x_coords = np.linspace(0, env_size[0], n)
-    y_coords = np.linspace(0, env_size[1], n)
-
-    wtf = np.hstack(
-        [
-            np.dstack((x_zeros, y_coords)),
-            np.dstack((x_maxes, y_coords)),
-            np.dstack((x_coords, y_zeros)),
-            np.dstack((x_coords, y_maxes)),
-        ]
-    )
-
-    obstacles = wtf.reshape([len(wtf[0]), 1, 2])
+    obstacles = np.random.rand(n, 1, 2)
+    obstacles[:, 0, :] *= env_size
 
     return obstacles
 
@@ -155,7 +137,7 @@ class Simulation:
         self.sharks = generate_population(self.pars.shark_count, self.pars.shape)
 
         # make obstacles
-        self.obstacles = generate_obstacles(30, self.pars.shape)
+        self.obstacles = generate_obstacles(0, self.pars.shape)
 
     def load(self, f=None):
         if f == None:

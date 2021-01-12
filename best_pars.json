@@ -1,0 +1,22 @@
+{
+    "agility": 0.2,
+    "alignment_range": 1.6,
+    "alignment_weight": 0.01,
+    "boid_count": 200,
+    "cohesion_range": 1.7,
+    "cohesion_weight": 0.2,
+    "obstacle_range": 1.0,
+    "obstacle_weight": 15.0,
+    "separation_range": 0.6,
+    "separation_weight": 40,
+    "shape": [
+        10,
+        7
+    ],
+    "shark_agility": 0.09,
+    "shark_count": 1,
+    "shark_range": 1.5,
+    "shark_speed": 0.01,
+    "shark_weight": 18,
+    "speed": 0.05
+}

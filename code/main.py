@@ -21,6 +21,7 @@ IPYTHON_MODE = config["DEFAULT"]["ipython"]=='1'
 SLIDERS = config["DEFAULT"]["sliders"]=='1'
 DEFAULT_SAVE = config["DEFAULT"]["save"]
 
+MENU = False
 
 stop = False
 exc = None
@@ -47,6 +48,8 @@ def simulation_loop(simulation, screen, clock, fps):
             debug_draw(simulation, screen)
             draw_population(simulation, screen)
             draw_sliders()
+
+            draw_buttons(screen)
 
             # Fps counter
             draw_number(screen, int(clock.get_fps()))
@@ -135,17 +138,12 @@ if __name__ == "__main__":
 
     # Init simulation
     simulation = Simulation(
-        Parameters(),
+        None,
         grid_size=(grid_size, grid_size),
         box_sight_radius=box_sight,
         multithreaded=not IPYTHON_MODE,
         default_save=DEFAULT_SAVE
     )
-
-    try:
-        simulation.load()
-    except:
-        print("Couldn't load parameters.")
 
     # Init pygame
     screen, clock = init_pygame(resolution=[980, 980], simulation_pars=simulation.pars, do_sliders=SLIDERS)

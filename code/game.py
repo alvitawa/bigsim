@@ -40,6 +40,8 @@ def init_globals():
     global K
 
     global COLORS
+    global MENU
+    MENU = False
 
     K = 5
 
@@ -67,6 +69,12 @@ def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
     pygame.display.set_caption("Bad Boids 4 Life Simulator")
 
     screen = pygame.display.set_mode(resolution)
+
+    global BUTTON_DATA
+    BUTTON_DATA = [
+#   Button rectangle                            function
+        [[0, screen.get_height()-20, 20, 20],   toggle_menu],
+    ]
 
     clock = pygame.time.Clock()
 
@@ -114,6 +122,12 @@ def check_input(simulation):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1: # left click = select fish
                 pos = np.array(pygame.mouse.get_pos())
+                
+                # Check all buttons
+                for rectangle, button_function in BUTTON_DATA:
+                    if is_in_rect(pos, rectangle):
+                        button_function()
+
                 scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
 
                 fish_rel = simulation.population[:, 0, :] - scaled
@@ -136,10 +150,41 @@ def clear_screen(screen):
     # Fill ocean background
     screen.fill(OCEAN_COLOR)
 
+def is_in_rect(coordinates, rect):
+    in_x = (rect[0] <= coordinates[0] <= rect[0]+rect[2])
+    in_y = (rect[1] <= coordinates[1] <= rect[3]+rect[1])
+    return in_x and in_y
 
 def draw_sliders():
-    for slider in sliders:
-        slider.draw()
+    if MENU:
+        for slider in sliders:
+            slider.draw()
+
+# BUTTONS
+def toggle_menu():
+    global MENU
+    MENU = not MENU
+
+def draw_button(surface, rectangle, color=[255, 255, 255], hover=False):
+    if hover: 
+        # Light is same color minus 10
+        color_light = np.max(np.vstack([[0, 0, 0], np.array(color)-100]), axis=0) # This should be easier ?
+
+        pygame.draw.rect(surface,color_light,rectangle) 
+    else: 
+        pygame.draw.rect(surface,color,rectangle) 
+
+def draw_buttons(screen):
+    global BUTTON_DATA
+    for rectangle, _ in BUTTON_DATA:
+
+        mouse = pygame.mouse.get_pos() 
+        if ( is_in_rect(mouse, rectangle) ): 
+            hover = True
+        else:
+            hover = False
+
+        draw_button(screen, rectangle, hover=hover)
 
 def draw_number(screen, number):
     '''Displays a fps number on the screen'''

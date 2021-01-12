@@ -332,8 +332,6 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
 
     new_direction = fish[:, 1, :] + steer_normed * pars.agility
     lengths = np.linalg.norm(new_direction, axis=1)[:, None]
-    lengths[lengths == 0] = 1
-    # print("New Dir: ", new_direction.shape)
     updated_fish[:, 1, :] = new_direction / lengths
 
     # move da fish

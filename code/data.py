@@ -60,6 +60,18 @@ def sq_dir_wf(distances, pars):
 def identity_wf(distances, _=None):
     return distances == 0
 
+def find_eaten_fish(distances):
+    loca = np.where(distances<0.3)
+    indx = loca[0]
+    return np.unique(indx)
+
+
+
+def delete_fish(population, indexes):
+    dead_fish = population[indexes]
+    alive_fish = np.delete(population, indexes, 0)
+    # delete
+    return alive_fish
 
 @dataclass_json
 @dataclass
@@ -227,12 +239,13 @@ class Simulation:
             self.population[:, 0, 0] %= self.pars.shape[0]
             self.population[:, 0, 1] %= self.pars.shape[1]
 
-            self.sharks = move_sharks(
-                self.sharks, self.population, self.obstacles, self.pars
-            )
+
+            self.sharks, eaten_fish_indexes = move_sharks(self.sharks, self.population, self.obstacles, self.pars)
 
             self.sharks[:, 0, 0] %= self.pars.shape[0]
             self.sharks[:, 0, 1] %= self.pars.shape[1]
+
+            self.population = delete_fish(self.population, eaten_fish_indexes)
 
             # solid walls
             # self.population[:, 0, 0] = np.clip(self.population[:, 0, 0], 0, self.pars.shape[0])
@@ -349,6 +362,8 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
     # Chase: move to weighted center of mass of fish
     fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
     distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
+    
+    
 
     fish_weights = stats.norm.pdf(
         distances / (pars.cohesion_range * 2)
@@ -382,11 +397,12 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
     # move da fish
     updated_shark[:, 0, :] += updated_shark[:, 1, :] * pars.shark_speed
 
-    nans = np.argwhere(np.isnan(updated_shark))
-    if nans.shape[0] > 0:
-        raise Exception(f"{nans.shape[0]} NaN's encountered in move_sharks")
 
-    return updated_shark
+    # Eating
+    eaten_fish_indexes = find_eaten_fish(distances)
+
+    return updated_shark, eaten_fish_indexes
+
 
 
 def task(

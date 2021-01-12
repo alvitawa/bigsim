@@ -22,15 +22,15 @@ SLIDABLE_PARAMETERS = [
     ("speed",               1),
     ("agility",             1),
     ("separation_weight",   15),
-    ("separation_range",    1),
+    ("separation_range",    3),
     ("cohesion_weight",     15),
-    ("cohesion_range",      1),
+    ("cohesion_range",      3),
     ("alignment_weight",    15),
-    ("alignment_range",     1),
+    ("alignment_range",     3),
     ("obstacle_weight",     15),
-    ("obstacle_range",      1),
+    ("obstacle_range",      3),
     ("shark_weight",        15),
-    ("shark_range",         1),
+    ("shark_range",         3),
     ("shark_speed",         1),
     ("shark_agility",       1),
 ]
@@ -40,6 +40,8 @@ def init_globals():
     global K
 
     global COLORS
+    global MENU
+    MENU = False
 
     K = 5
 
@@ -67,6 +69,12 @@ def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
     pygame.display.set_caption("Bad Boids 4 Life Simulator")
 
     screen = pygame.display.set_mode(resolution)
+
+    global BUTTON_DATA
+    BUTTON_DATA = [
+#   Button rectangle                            function
+        [[0, screen.get_height()-20, 20, 20],   toggle_menu],
+    ]
 
     clock = pygame.time.Clock()
 
@@ -112,17 +120,23 @@ def check_input(simulation):
                 pass
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1: # left click = select fish
-                pos = np.array(pygame.mouse.get_pos())
+            pos = np.array(pygame.mouse.get_pos())
+            if event.button == 1: # left click = check buttons
+
+                # Check all buttons
+                for rectangle, button_function in BUTTON_DATA:
+                    if is_in_rect(pos, rectangle):
+                        button_function()
+
+            if event.button == 3: # right click = select fish
                 scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
 
                 fish_rel = simulation.population[:, 0, :] - scaled
                 distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
 
-                global selected_index
-                selected_index = np.argmin(distances)
+                data.selected_index = np.argmin(distances)
 
-            if event.button == 2: # right click place obstacle
+            if event.button == 2: # middle click place obstacle
                 pos = np.array(pygame.mouse.get_pos())
                 scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
 
@@ -137,10 +151,41 @@ def clear_screen(screen):
     # Fill ocean background
     screen.fill(OCEAN_COLOR)
 
+def is_in_rect(coordinates, rect):
+    in_x = (rect[0] <= coordinates[0] <= rect[0]+rect[2])
+    in_y = (rect[1] <= coordinates[1] <= rect[3]+rect[1])
+    return in_x and in_y
 
 def draw_sliders():
-    for slider in sliders:
-        slider.draw()
+    if MENU:
+        for slider in sliders:
+            slider.draw()
+
+# BUTTONS
+def toggle_menu():
+    global MENU
+    MENU = not MENU
+
+def draw_button(surface, rectangle, color=[255, 255, 255], hover=False):
+    if hover: 
+        # Light is same color minus 10
+        color_light = np.max(np.vstack([[0, 0, 0], np.array(color)-100]), axis=0) # This should be easier ?
+
+        pygame.draw.rect(surface,color_light,rectangle) 
+    else: 
+        pygame.draw.rect(surface,color,rectangle) 
+
+def draw_buttons(screen):
+    global BUTTON_DATA
+    for rectangle, _ in BUTTON_DATA:
+
+        mouse = pygame.mouse.get_pos() 
+        if ( is_in_rect(mouse, rectangle) ): 
+            hover = True
+        else:
+            hover = False
+
+        draw_button(screen, rectangle, hover=hover)
 
 def draw_number(screen, number):
     '''Displays a fps number on the screen'''
@@ -172,12 +217,10 @@ def positions_to_colors(positions):
     # Convert probabilities to colors
     return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)
 
-selected_index = None
-
 def debug_draw(simulation: Simulation, screen):
-    if selected_index == None:
+    if data.selected_index == None:
         return
-    selected_fish = simulation.population[selected_index]
+    selected_fish = simulation.population[data.selected_index]
     scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
 
     location = selected_fish[0] * scaling

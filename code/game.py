@@ -7,7 +7,9 @@ import numpy as np
 import math
 
 from sklearn.mixture import GaussianMixture
+
 import warnings
+from sklearn.exceptions import ConvergenceWarning
 
 import data
 from data import Simulation
@@ -49,9 +51,9 @@ def init_globals():
                     init_params='random',
                     verbose=0)
 
-
+    # No convergence warnings
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore")
+        warnings.filterwarnings("ignore", category=ConvergenceWarning)
         GM.fit(np.random.rand(K, 2))
 
 
@@ -144,9 +146,9 @@ def positions_to_colors(positions):
                         weights_init=GM.weights_,
                         verbose=0)
     
-
+    # No convergence warnings
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore")
+        warnings.filterwarnings("ignore", category=ConvergenceWarning)
         GM.fit(positions)
 
     probs = GM.predict_proba(positions)

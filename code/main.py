@@ -133,17 +133,12 @@ if __name__ == "__main__":
 
     # Init simulation
     simulation = Simulation(
-        Parameters(),
+        None,
         grid_size=(grid_size, grid_size),
         box_sight_radius=box_sight,
         multithreaded=not IPYTHON_MODE,
         default_save=DEFAULT_SAVE
     )
-
-    try:
-        simulation.load()
-    except:
-        print("Couldn't load parameters.")
 
     # Init pygame
     screen, clock = init_pygame(resolution=[1080, 720], simulation_pars=simulation.pars, do_sliders=SLIDERS)

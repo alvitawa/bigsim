@@ -64,10 +64,9 @@ def identity_wf(distances, _=None):
     return distances == 0
 
 
-
 @dataclass_json
 @dataclass
-class Parameters():
+class Parameters:
     shape: Any = (10, 7)
     boid_count: int = 300
     shark_count: int = 5
@@ -145,20 +144,26 @@ class Simulation:
 
     def __init__(
         self,
-        pars=Parameters(),
+        pars=None,
         grid_size=(1.0, 1.0),
         box_sight_radius=2,
         multithreaded=True,
-        default_save='saved_parameters.json'
+        default_save="saved_parameters.json",
     ):
         # Save simulation parameters
+        self.default_save = default_save
         self.pars = pars
-
+        if self.pars == None:
+            try:
+                self.load()
+            except Exception as e:
+                print("Couldn't load parameters.")
+                print(e)
+                self.pars = Parameters()
         # Algo settings
         self.box_sight_radius = box_sight_radius
         self.grid_size = np.array(grid_size)
         self.multithreaded = multithreaded
-        self.default_save = default_save
 
         x_boxes = int(np.ceil(self.pars.shape[0] / self.grid_size[0]))
         y_boxes = int(np.ceil(self.pars.shape[1] / self.grid_size[1]))
@@ -174,19 +179,18 @@ class Simulation:
         # make obstacles
         self.obstacles = generate_obstacles(30, self.pars.shape)
 
-        
     def load(self, f=None):
         if f == None:
             f = self.default_save
-        with open(f, 'r') as file:
+        with open(f, "r") as file:
             self.pars = Parameters.from_json(file.read())
             return self.pars
 
     def save(self, f=None):
         if f == None:
             f = self.default_save
-        with open(f, 'w') as file:
-            return json.dump(self.pars.to_dict(),  file, indent=4, sort_keys=True)
+        with open(f, "w") as file:
+            return json.dump(self.pars.to_dict(), file, indent=4, sort_keys=True)
 
     def iterate(self, pool, n=1):
         for _ in range(n):
@@ -261,22 +265,34 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
 
     # Cohesion: move to weighted center of mass of school
-    cohesion_weights = stats.norm.pdf(distances / (pars.cohesion_range*2)) # range indicates 2 deviations (98%)
+    cohesion_weights = stats.norm.pdf(
+        distances / (pars.cohesion_range * 2)
+    )  # range indicates 2 deviations (98%)
     center_off_mass = (neighbours_rel * cohesion_weights[:, :, None]).sum(axis=0)
 
     # Seperation: move away from very close fish
-    seperation_weights = stats.norm.pdf(distances / (pars.separation_range*2)) # range indicates 2 deviations (98%)
-    move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
+    seperation_weights = stats.norm.pdf(
+        distances / (pars.separation_range * 2)
+    )  # range indicates 2 deviations (98%)
+    move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(
+        axis=0
+    )
 
     # Alignment: align with nearby fish
-    alignment_weights = stats.norm.pdf(distances / (pars.alignment_range*2)) # range indicates 2 deviations (98%)
-    target_alignment = (neighbours[:, None, 1, :] * alignment_weights[:, :, None]).sum(axis=0)
+    alignment_weights = stats.norm.pdf(
+        distances / (pars.alignment_range * 2)
+    )  # range indicates 2 deviations (98%)
+    target_alignment = (neighbours[:, None, 1, :] * alignment_weights[:, :, None]).sum(
+        axis=0
+    )
 
     # --- Obstacles ---
     obstacles_rel = sharks[:, None, 0, :] - fish[:, 0, :]
     obs_distances = np.sqrt(np.power(obstacles_rel, 2).sum(axis=-1))
 
-    obstacle_weights = stats.norm.pdf(obs_distances / (pars.obstacle_range*2)) # range indicates 2 deviations (98%)
+    obstacle_weights = stats.norm.pdf(
+        obs_distances / (pars.obstacle_range * 2)
+    )  # range indicates 2 deviations (98%)
     obstacle_target = -1 * (obstacles_rel * obstacle_weights[:, :, None]).sum(axis=0)
 
     wall_target = None
@@ -284,7 +300,9 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     sharks_rel = obstacles - fish[:, 0, :]
     shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
 
-    shark_weights = stats.norm.pdf(shark_distances / (pars.shark_range*2)) # range indicates 2 deviations (98%)
+    shark_weights = stats.norm.pdf(
+        shark_distances / (pars.shark_range * 2)
+    )  # range indicates 2 deviations (98%)
     sharks_target = -1 * (sharks_rel * shark_weights[:, :, None]).sum(axis=0)
 
     # We could also do like turn away from the direction of the shark
@@ -303,7 +321,9 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     vectors = np.array([cohesion, seperation, alignment, obstacle, shark])
 
     steer_direction = sum(vectors)  # this would be nicer with np.sum(some_axis)
-    steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
+    lengths = np.linalg.norm(steer_direction, axis=1)[:, None]
+    lengths[lengths == 0] = 1
+    steer_normed = steer_direction / lengths
 
     # print("Steer: ", steer_normed.shape)
 
@@ -311,10 +331,10 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     updated_fish = np.copy(fish)
 
     new_direction = fish[:, 1, :] + steer_normed * pars.agility
+    lengths = np.linalg.norm(new_direction, axis=1)[:, None]
+    lengths[lengths == 0] = 1
     # print("New Dir: ", new_direction.shape)
-    updated_fish[:, 1, :] = (
-        new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
-    )
+    updated_fish[:, 1, :] = new_direction / lengths
 
     # move da fish
     updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed
@@ -332,7 +352,9 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
     fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
     distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
 
-    fish_weights = stats.norm.pdf(distances / (pars.cohesion_range*2)) # fuck it use cohesion weight for now
+    fish_weights = stats.norm.pdf(
+        distances / (pars.cohesion_range * 2)
+    )  # fuck it use cohesion weight for now
     center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
 
     # Todo: we could also add obstacle avoidance etc.

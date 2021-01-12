@@ -95,8 +95,8 @@ class Parameters:
     obstacle_weight: float = 2
     obstacle_range: float = 0.1
 
-    wall_weight: float = 1
-    wall_range: float = 1
+    wall_weight: float = 100
+    wall_range: float = 0.1
 
     shark_weight: float = 1.8
     shark_range: float = 0.7

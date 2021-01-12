@@ -8,6 +8,9 @@ import math
 
 from sklearn.mixture import GaussianMixture
 
+import warnings
+from sklearn.exceptions import ConvergenceWarning
+
 import data
 from data import Simulation
 
@@ -15,20 +18,21 @@ OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255)
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
 SLIDABLE_PARAMETERS = [
-    "speed",
-    "agility",
-    "separation_weight",
-    "separation_range",
-    "cohesion_weight",
-    "cohesion_range",
-    "alignment_weight",
-    "alignment_range",
-    "obstacle_weight",
-    "obstacle_range",
-    "shark_weight",
-    "shark_range",
-    "shark_speed",
-    "shark_agility"
+#   Name                    Max Value
+    ("speed",               1),
+    ("agility",             1),
+    ("separation_weight",   15),
+    ("separation_range",    1),
+    ("cohesion_weight",     15),
+    ("cohesion_range",      1),
+    ("alignment_weight",    15),
+    ("alignment_range",     1),
+    ("obstacle_weight",     15),
+    ("obstacle_range",      1),
+    ("shark_weight",        15),
+    ("shark_range",         1),
+    ("shark_speed",         1),
+    ("shark_agility",       1),
 ]
 
 def init_globals():
@@ -43,11 +47,15 @@ def init_globals():
     COLORS = np.random.choice(range(256), size=3*K).reshape(K, 3)
 
     GM = GaussianMixture(n_components=K, 
-                     max_iter=1000, 
-                     tol=1e-4,
-                     init_params='random')
+                    max_iter=1000, 
+                    tol=1e-4,
+                    init_params='random',
+                    verbose=0)
 
-    GM.fit(np.random.rand(K, 2))
+    # No convergence warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=ConvergenceWarning)
+        GM.fit(np.random.rand(K, 2))
 
 
 # Set up pygame
@@ -66,9 +74,10 @@ def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
     sliders = []
 
     if do_sliders:
-        for n, par in enumerate(SLIDABLE_PARAMETERS):
+        for n, (par, max_value) in enumerate(SLIDABLE_PARAMETERS):
+            print(par, type(max_value))
             slider = LabeledSlider(
-                screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation_pars[par], min=0, max=2
+                screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation_pars[par], min=0, max=max_value
             )
             sliders.append(slider)
 
@@ -78,12 +87,16 @@ def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
 def exit_pygame():
     pygame.quit()
 
+def load_pars(population):
+    pars = population.load()
+    for (par, _), slider in zip(SLIDABLE_PARAMETERS, sliders):
+        slider.set_value(pars[par])
 
 def check_input(population):
     events = pygame.event.get()
 
     # Update sliders
-    for par, slider in zip(SLIDABLE_PARAMETERS, sliders):
+    for (par, _), slider in zip(SLIDABLE_PARAMETERS, sliders):
         slider.update(events)
         population.pars[par] = slider.get_value()
 
@@ -136,8 +149,14 @@ def positions_to_colors(positions):
                         max_iter=10, 
                         tol=1e-4,
                         means_init=GM.means_,
-                        weights_init=GM.weights_,)
-    GM.fit(positions)
+                        weights_init=GM.weights_,
+                        verbose=0)
+    
+    # No convergence warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=ConvergenceWarning)
+        GM.fit(positions)
+
     probs = GM.predict_proba(positions)
 
     # Convert probabilities to colors

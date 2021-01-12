@@ -17,7 +17,8 @@ from warnings import filterwarnings
 config = configparser.ConfigParser()
 config.read("config.ini")
 
-DEBUG_MODE = bool(config["DEFAULT"]["debug"] == 'True')
+IPYTHON_MODE = config["DEFAULT"]["ipython"]=='1'
+SLIDERS = config["DEFAULT"]["sliders"]=='1'
 DEFAULT_SAVE = config["DEFAULT"]["save"]
 
 
@@ -42,7 +43,7 @@ def simulation_loop(simulation, screen, clock, fps):
 
             tic = time.perf_counter()  # Rendering
             clear_screen(screen)
-            draw_simulation(simulation, screen)
+            draw_population(simulation, screen)
             draw_sliders()
 
             # Fps counter
@@ -108,17 +109,6 @@ def start():
 def debug():
     pdb.post_mortem(exc[2])
 
-    
-def wpars(f=DEFAULT_SAVE):
-    global simulation
-    with open(f, 'w') as file:
-        json.dump(simulation.pars.to_dict(),  file, indent=4, sort_keys=True)
-
-def lpars(f=DEFAULT_SAVE):
-    global simulation
-    with open(f, 'r') as file:
-        simulation.pars = Parameters.from_json(file.read())
-
 
 def pars():
     global simulation
@@ -136,7 +126,6 @@ if __name__ == "__main__":
     box_sight = np.ceil(sight / grid_size)
 
     # Parameters
-    pars = Parameters()
 
     iterations_left = 100000000
 
@@ -144,19 +133,33 @@ if __name__ == "__main__":
 
     # Init simulation
     simulation = Simulation(
-        pars,
+        Parameters(),
         grid_size=(grid_size, grid_size),
         box_sight_radius=box_sight,
-        multithreaded=not DEBUG_MODE,
+        multithreaded=not IPYTHON_MODE,
+        default_save=DEFAULT_SAVE
     )
 
-    # Init pygame
-    screen, clock = init_pygame(resolution=[1080, 720], simulation_pars=pars, do_sliders=not DEBUG_MODE)
+    try:
+        simulation.load()
+    except:
+        print("Couldn't load parameters.")
 
-    if not DEBUG_MODE:
+    # Init pygame
+    screen, clock = init_pygame(resolution=[1080, 720], simulation_pars=simulation.pars, do_sliders=SLIDERS)
+
+    if not IPYTHON_MODE:
         simulation_loop(simulation, screen, clock, fps)
     else:
         filterwarnings('ignore')
+
+        def lp():
+            global simulation
+            return simulation.load()
+
+        def wp():
+            global simulation
+            return simulation.save()
 
         start()
         embed()

@@ -23,3 +23,6 @@ class LabeledSlider:
 
     def get_value(self):
         return self.slider.getValue()
+
+    def set_value(self, value):
+        self.slider.setValue(value)

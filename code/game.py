@@ -239,7 +239,7 @@ def debug_draw(simulation: Simulation, screen):
     assigned_box = selected_fish[0] // simulation.grid_size
     grid_coordinates = simulation.population[:, 0, :] // simulation.grid_size
     outer_idx = (np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= simulation.box_sight_radius)
-    cohesion, seperation, alignment, obstacle, shark = data.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
+    cohesion, seperation, alignment, obstacle, wall, shark = data.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
 
     pygame.draw.line(screen, OBSTACLE_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + obstacle) * scaling))
     pygame.draw.line(screen, SHARK_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + shark) * scaling))

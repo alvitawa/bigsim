@@ -64,6 +64,9 @@ class Parameters:
     obstacle_weight: float = 2
     obstacle_range: float = 0.1
 
+    wall_weight: float = 100
+    wall_range: float = 0.1
+
     shark_weight: float = 1.8
     shark_range: float = 0.7
 
@@ -268,7 +271,12 @@ def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     obstacle_weights = distance_to_weights(sqr_obs_distances, pars.obstacle_range)
     obstacle_target = -1 * (obstacles_rel * obstacle_weights[:, :, None]).sum(axis=0)
 
-    wall_target = None
+    # --- Walls ---
+    topleft_target = distance_to_weights(fish[:, 0, :]**2, pars.wall_range)
+    botright_target = -1 * distance_to_weights((np.array(pars.shape) - fish[:, 0, :]), pars.wall_range) 
+
+    wall_target = topleft_target + botright_target
+
     # --- Predators ---
     sharks_rel = sharks[:, None, 0, :] - fish[:, 0, :]
     sqr_shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
@@ -283,16 +291,17 @@ def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     alignment = np.nan_to_num(target_alignment * pars.alignment_weight)
 
     obstacle = np.nan_to_num(obstacle_target * pars.obstacle_weight)
+    wall = np.nan_to_num(wall_target * pars.wall_weight)
     shark = np.nan_to_num(sharks_target * pars.shark_weight)
 
-    return cohesion, seperation, alignment, obstacle, shark
+    return cohesion, seperation, alignment, obstacle, wall, shark
 
 def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     # --- Get vectors ---
-    cohesion, seperation, alignment, obstacle, shark = fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
+    cohesion, seperation, alignment, obstacle, wall, shark = fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
 
     # Combine them to make the steering direction
-    vectors = np.array([cohesion, seperation, alignment, obstacle, shark])
+    vectors = np.array([cohesion, seperation, alignment, obstacle, wall, shark])
 
     steer_direction = sum(vectors)  # this would be nicer with np.sum(some_axis)
     lengths = np.linalg.norm(steer_direction, axis=1)[:, None]

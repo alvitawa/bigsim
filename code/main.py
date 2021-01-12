@@ -17,11 +17,12 @@ from warnings import filterwarnings
 config = configparser.ConfigParser()
 config.read("config.ini")
 
-IPYTHON_MODE = config["DEFAULT"]["ipython"]=='1'
-SLIDERS = config["DEFAULT"]["sliders"]=='1'
-DEFAULT_SAVE = config["DEFAULT"]["save"]
-
-MENU = False
+cfg = config["DEFAULT"]
+IPYTHON_MODE = cfg["ipython"]=='1'
+SLIDERS = cfg["sliders"]=='1'
+DEFAULT_SAVE = cfg["save"]
+WIDTH = int(cfg["width"])
+HEIGHT = int(cfg['height'])
 
 stop = False
 exc = None
@@ -146,7 +147,7 @@ if __name__ == "__main__":
     )
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[980, 600], simulation_pars=simulation.pars, do_sliders=SLIDERS)
+    screen, clock = init_pygame(resolution=[WIDTH, HEIGHT], simulation_pars=simulation.pars, do_sliders=SLIDERS)
 
     if not IPYTHON_MODE:
         simulation_loop(simulation, screen, clock, fps)

@@ -36,6 +36,8 @@ def simulation_loop(population, screen, clock, fps):
 
             tic = time.perf_counter()  # Rendering
             clear_screen(screen)
+
+            debug_draw(population, screen)
             draw_population(population, screen)
             draw_sliders()
 
@@ -127,7 +129,7 @@ if __name__ == "__main__":
     )
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[1080, 720], simulation_pars=pars, do_sliders=not DEBUG_MODE)
+    screen, clock = init_pygame(resolution=[920, 920], simulation_pars=pars, do_sliders=not DEBUG_MODE)
 
     if not DEBUG_MODE:
         simulation_loop(population, screen, clock, fps)

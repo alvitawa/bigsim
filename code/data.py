@@ -1,8 +1,9 @@
 from sys import is_finalizing
+from timeit import default_timer
 from typing import Any, Callable
 from dataclasses import field
 from boid import Boid
-
+import json
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
@@ -13,6 +14,7 @@ from scipy.spatial import distance_matrix
 from functools import partial
 
 from dataclasses import dataclass
+from dataclasses_json import config, DataClassJsonMixin, dataclass_json
 
 def exponential_weight_function(distances, inner_diameter, outer_diameter):
     pass
@@ -59,8 +61,10 @@ def identity_wf(distances, _=None):
     return distances == 0
 
 
+
+@dataclass_json
 @dataclass
-class Parameters:
+class Parameters():
     shape: Any = (10, 7)
     boid_count: int = 300
     shark_count: int = 5
@@ -86,30 +90,14 @@ class Parameters:
     shark_speed: float = 0.05
     shark_agility: float = 0.09
 
-    pos_wf: Callable = gaussian_pos_wf
-    dir_wf: Callable = gaussian_dir_wf
-    obs_wf: Callable = gaussian_obs_wf
-
-    def position_weights(self, distances):
-        return self.pos_wf(distances, self)
-
-    def direction_weights(self, distances):
-        return self.dir_wf(distances, self)
-
-    def position_weights(self, distances):
-        return self.pos_wf(distances, self)
-
-    def obstacle_weights(self, distances):
-        return self.obs_wf(distances, self)
-
     def __getitem__(self, index):
         return getattr(self, index)
 
     def __setitem__(self, index, value):
         setattr(self, index, value)
 
-    def __post_init__(self):
-        self.shape = np.array(self.shape)
+    # def __post_init__(self):
+    #     self.shape = np.array(self.shape)
 
 
 def generate_population(n, env_size):
@@ -133,7 +121,14 @@ def generate_obstacles(n, env_size):
     x_coords = np.linspace(0, env_size[0], n)
     y_coords = np.linspace(0, env_size[1], n)
 
-    wtf = np.hstack([np.dstack((x_zeros, y_coords)), np.dstack((x_maxes, y_coords)), np.dstack((x_coords, y_zeros)), np.dstack((x_coords, y_maxes))])
+    wtf = np.hstack(
+        [
+            np.dstack((x_zeros, y_coords)),
+            np.dstack((x_maxes, y_coords)),
+            np.dstack((x_coords, y_zeros)),
+            np.dstack((x_coords, y_maxes)),
+        ]
+    )
 
     obstacles = wtf.reshape([len(wtf[0]), 1, 2])
 
@@ -151,6 +146,7 @@ class Simulation:
         grid_size=(1.0, 1.0),
         box_sight_radius=2,
         multithreaded=True,
+        default_save='saved_parameters.json'
     ):
         # Save simulation parameters
         self.pars = pars
@@ -159,6 +155,7 @@ class Simulation:
         self.box_sight_radius = box_sight_radius
         self.grid_size = np.array(grid_size)
         self.multithreaded = multithreaded
+        self.default_save = default_save
 
         x_boxes = int(np.ceil(self.pars.shape[0] / self.grid_size[0]))
         y_boxes = int(np.ceil(self.pars.shape[1] / self.grid_size[1]))
@@ -174,6 +171,20 @@ class Simulation:
         # make obstacles
         self.obstacles = generate_obstacles(30, self.pars.shape)
 
+        
+    def load(self, f=None):
+        if f == None:
+            f = self.default_save
+        with open(f, 'r') as file:
+            self.pars = Parameters.from_json(file.read())
+            return self.pars
+
+    def save(self, f=None):
+        if f == None:
+            f = self.default_save
+        with open(f, 'w') as file:
+            return json.dump(self.pars.to_dict(),  file, indent=4, sort_keys=True)
+
     def iterate(self, pool, n=1):
         for _ in range(n):
             grid_coordinates = self.population[:, 0, :] // self.grid_size
@@ -188,7 +199,7 @@ class Simulation:
                         box_sight_radius=self.box_sight_radius,
                         pars=self.pars,
                         obstacles=self.obstacles,
-                        sharks=self.sharks
+                        sharks=self.sharks,
                     ),
                     self.boxes,
                 )
@@ -201,6 +212,7 @@ class Simulation:
                         self.box_sight_radius,
                         self.pars,
                         self.obstacles,
+                        self.sharks,
                     )
                     results.append((idx, new))
 
@@ -211,7 +223,9 @@ class Simulation:
             self.population[:, 0, 0] %= self.pars.shape[0]
             self.population[:, 0, 1] %= self.pars.shape[1]
 
-            self.sharks = move_sharks(self.sharks, self.population, self.obstacles, self.pars)
+            self.sharks = move_sharks(
+                self.sharks, self.population, self.obstacles, self.pars
+            )
 
             self.sharks[:, 0, 0] %= self.pars.shape[0]
             self.sharks[:, 0, 1] %= self.pars.shape[1]
@@ -222,6 +236,7 @@ class Simulation:
 
         # with Pool(processes=4) as pool:
         #     results = pool.map(task, parameters)
+
 
 def stable_norm(array):
     """
@@ -260,6 +275,7 @@ def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     obstacle_weights = stats.norm.pdf(obs_distances / (pars.obstacle_range*2)) # range indicates 2 deviations (98%)
     obstacle_target = -1 * (obstacles_rel * obstacle_weights[:, :, None]).sum(axis=0)
 
+    wall_target = None
     # --- Predators ---
     sharks_rel = sharks[:, None, 0, :] - fish[:, 0, :]
     shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
@@ -286,7 +302,7 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     # Combine them to make the steering direction
     vectors = np.array([cohesion, seperation, alignment, obstacle, shark])
 
-    steer_direction = sum(list(vectors)) # this would be nicer with np.sum(some_axis)
+    steer_direction = sum(vectors)  # this would be nicer with np.sum(some_axis)
     steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
 
     # print("Steer: ", steer_normed.shape)
@@ -296,7 +312,9 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
 
     new_direction = fish[:, 1, :] + steer_normed * pars.agility
     # print("New Dir: ", new_direction.shape)
-    updated_fish[:, 1, :] = new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
+    updated_fish[:, 1, :] = (
+        new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
+    )
 
     # move da fish
     updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed
@@ -304,9 +322,10 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     # check for error
     nans = np.argwhere(np.isnan(updated_fish))
     if nans.shape[0] > 0:
-        raise Exception(f"{nans.shape[0]} NaN's encountered in local_update")
+        raise Exception(f"{nans.shape[0]} NaN's encountered in move_fish")
 
     return updated_fish
+
 
 def move_sharks(sharks, fish, obstacles, pars: Parameters):
     # Chase: move to weighted center of mass of fish
@@ -326,7 +345,7 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
     # Combine them to make the steering direction
     vectors = np.array([chase])
 
-    steer_direction = sum(list(vectors)) # this would be nicer with np.sum(some_axis)
+    steer_direction = sum(list(vectors))  # this would be nicer with np.sum(some_axis)
     steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
 
     # print("Steer: ", steer_normed.shape)
@@ -336,21 +355,37 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
 
     new_direction = sharks[:, 1, :] + steer_normed * pars.shark_agility
     # print("New Dir: ", new_direction.shape)
-    updated_shark[:, 1, :] = new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
+    updated_shark[:, 1, :] = (
+        new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
+    )
 
     # move da fish
     updated_shark[:, 0, :] += updated_shark[:, 1, :] * pars.shark_speed
 
+    nans = np.argwhere(np.isnan(updated_shark))
+    if nans.shape[0] > 0:
+        raise Exception(f"{nans.shape[0]} NaN's encountered in move_sharks")
+
     return updated_shark
 
 
-def task(assigned_box, population, grid_coordinates, box_sight_radius, pars, obstacles, sharks):
+def task(
+    assigned_box,
+    population,
+    grid_coordinates,
+    box_sight_radius,
+    pars,
+    obstacles,
+    sharks,
+):
     inner_idx = np.all(np.equal(grid_coordinates, assigned_box.T), axis=1)
 
     outer_idx = (
         np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= box_sight_radius
     )
 
-    new_inner = move_fish(population[inner_idx], population[outer_idx], obstacles, sharks, pars)
+    new_inner = move_fish(
+        population[inner_idx], population[outer_idx], obstacles, sharks, pars
+    )
 
     return inner_idx, new_inner

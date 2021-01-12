@@ -1,25 +1,32 @@
 from boid import *
 from data import *
 
+import pdb
 import sys
 import time
 import timeit
+import pickle
+import json
 import threading
 from IPython import embed
 
 import configparser
 
+from warnings import filterwarnings
+
 config = configparser.ConfigParser()
 config.read("config.ini")
 
-DEBUG_MODE = bool(config["DEFAULT"]["debug"] == 'True')
+IPYTHON_MODE = config["DEFAULT"]["ipython"]=='1'
+SLIDERS = config["DEFAULT"]["sliders"]=='1'
+DEFAULT_SAVE = config["DEFAULT"]["save"]
 
 
 stop = False
 exc = None
 threads = 6
 
-def simulation_loop(population, screen, clock, fps):
+def simulation_loop(simulation, screen, clock, fps):
     global stop
 
     iterations = 0
@@ -32,13 +39,13 @@ def simulation_loop(population, screen, clock, fps):
     with Pool(processes=threads) as pool:
         while not stop:
 
-            quit = check_input(population)
+            quit = check_input(simulation)
 
             tic = time.perf_counter()  # Rendering
             clear_screen(screen)
-
-            debug_draw(population, screen)
-            draw_population(population, screen)
+            
+            debug_draw(simulation, screen)
+            draw_population(simulation, screen)
             draw_sliders()
 
             # Fps counter
@@ -52,7 +59,7 @@ def simulation_loop(population, screen, clock, fps):
             render_time += toc - tic
 
             tic = time.perf_counter()  # Computation
-            population.iterate(pool, 1)
+            simulation.iterate(pool, 1)
             toc = time.perf_counter()
 
             computation_time += toc - tic
@@ -90,17 +97,24 @@ def exception_catcher(f, *args, **kwargs):
     try:
         f(*args, **kwargs)
     except Exception as e:
-        exc = sys.exc_info()[2]
+        exc = sys.exc_info()
         print(e)
 
 
 def start():
-    global simulation_loop, population, screen, clock, fps
+    global simulation_loop, simulation, screen, clock, fps
     thread = threading.Thread(
-        target=exception_catcher, args=(simulation_loop, population, screen, clock, fps)
+        target=exception_catcher, args=(simulation_loop, simulation, screen, clock, fps)
     )
     thread.start()
 
+def debug():
+    pdb.post_mortem(exc[2])
+
+
+def pars():
+    global simulation
+    return simulation.pars
 
 if __name__ == "__main__":
     from game import *
@@ -114,27 +128,40 @@ if __name__ == "__main__":
     box_sight = np.ceil(sight / grid_size)
 
     # Parameters
-    pars = Parameters(boid_count=200, shape=(size, size))
 
     iterations_left = 100000000
 
     fps = 60
 
-    # Init population
-    population = Simulation(
-        pars,
+    # Init simulation
+    simulation = Simulation(
+        Parameters(),
         grid_size=(grid_size, grid_size),
         box_sight_radius=box_sight,
-        multithreaded=not DEBUG_MODE,
+        multithreaded=not IPYTHON_MODE,
+        default_save=DEFAULT_SAVE
     )
 
-    # Init pygame
-    screen, clock = init_pygame(resolution=[920, 920], simulation_pars=pars, do_sliders=not DEBUG_MODE)
+    try:
+        simulation.load()
+    except:
+        print("Couldn't load parameters.")
 
-    if not DEBUG_MODE:
-        simulation_loop(population, screen, clock, fps)
+    # Init pygame
+    screen, clock = init_pygame(resolution=[980, 980], simulation_pars=simulation.pars, do_sliders=SLIDERS)
+
+    if not IPYTHON_MODE:
+        simulation_loop(simulation, screen, clock, fps)
     else:
-        import pdb
+        filterwarnings('ignore')
+
+        def lp():
+            global simulation
+            return simulation.load()
+
+        def wp():
+            global simulation
+            return simulation.save()
 
         start()
         embed()

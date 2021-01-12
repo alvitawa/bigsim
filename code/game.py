@@ -87,6 +87,10 @@ def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
 def exit_pygame():
     pygame.quit()
 
+def load_pars(population):
+    pars = population.load()
+    for (par, _), slider in zip(SLIDABLE_PARAMETERS, sliders):
+        slider.set_value(pars[par])
 
 def check_input(simulation):
     events = pygame.event.get()

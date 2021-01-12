@@ -21,6 +21,7 @@ IPYTHON_MODE = config["DEFAULT"]["ipython"]=='1'
 SLIDERS = config["DEFAULT"]["sliders"]=='1'
 DEFAULT_SAVE = config["DEFAULT"]["save"]
 
+MENU = False
 
 stop = False
 exc = None
@@ -45,6 +46,8 @@ def simulation_loop(simulation, screen, clock, fps):
             clear_screen(screen)
             draw_population(simulation, screen)
             draw_sliders()
+
+            draw_buttons(screen)
 
             # Fps counter
             draw_number(screen, int(clock.get_fps()))

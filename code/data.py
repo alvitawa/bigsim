@@ -190,20 +190,24 @@ class Simulation:
                 self.population[idx] = new
 
             # wrapping
-            self.population[:, 0, 0] %= self.pars.shape[0]
-            self.population[:, 0, 1] %= self.pars.shape[1]
+            # self.population[:, 0, 0] %= self.pars.shape[0]
+            # self.population[:, 0, 1] %= self.pars.shape[1]
 
 
             self.sharks, eaten_fish_indexes = move_sharks(self.sharks, self.population, self.obstacles, self.pars)
 
-            self.sharks[:, 0, 0] %= self.pars.shape[0]
-            self.sharks[:, 0, 1] %= self.pars.shape[1]
+            # self.sharks[:, 0, 0] %= self.pars.shape[0]
+            # self.sharks[:, 0, 1] %= self.pars.shape[1]
 
             self.population = delete_fish(self.population, eaten_fish_indexes)
 
             # solid walls
-            # self.population[:, 0, 0] = np.clip(self.population[:, 0, 0], 0, self.pars.shape[0])
-            # self.population[:, 0, 1] = np.clip(self.population[:, 0, 1], 0, self.pars.shape[1])
+            self.population[:, 0, 0] = np.clip(self.population[:, 0, 0], 0, self.pars.shape[0])
+            self.population[:, 0, 1] = np.clip(self.population[:, 0, 1], 0, self.pars.shape[1])
+
+            self.sharks[:, 0, 0] = np.clip(self.sharks[:, 0, 0], 0, self.pars.shape[0])
+            self.sharks[:, 0, 1] = np.clip(self.sharks[:, 0, 1], 0, self.pars.shape[1])
+
 
         # with Pool(processes=4) as pool:
         #     results = pool.map(task, parameters)

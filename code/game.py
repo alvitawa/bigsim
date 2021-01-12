@@ -144,14 +144,19 @@ def check_input():
                 pass
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-
             if event.button == 3: # right click = select fish
+                pos = np.array(pygame.mouse.get_pos())
                 scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
 
                 fish_rel = simulation.population[:, 0, :] - scaled
                 distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
 
-                data.selected_index = np.argmin(distances)
+                mindin = np.min(distances)
+
+                if mindin < 1:
+                    data.selected_index = np.argmin(distances)
+                else:
+                    data.selected_index = None
 
             if event.button == 2: # middle click place obstacle
                 pos = np.array(pygame.mouse.get_pos())
@@ -290,7 +295,7 @@ def draw_population(screen):
         else:
             rotation = -np.arccos(boid[1][0])
 
-        draw_fish(screen, boid[0] * scaling, rotation, boid_color, 15, 7)
+        draw_fish(screen, boid[0] * scaling, rotation, boid_color, 7, 4)
 
         # print(boid[1][0])
 
@@ -312,7 +317,7 @@ def draw_population(screen):
         else:
             rotation = -np.arccos(shark[1][0])
 
-        draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 60, 40)
+        draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 40, 40)
 
     return True
 

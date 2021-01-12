@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
     iterations_left = 100000000
 
-    fps = 60
+    fps = 30
 
     # Init simulation
     simulation = Simulation(

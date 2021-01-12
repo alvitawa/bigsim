@@ -41,13 +41,13 @@ def simulation_loop(simulation, screen, clock, fps):
     with Pool(processes=threads) as pool:
         while not stop:
 
-            quit = check_input(simulation)
+            quit = check_input()
 
             tic = time.perf_counter()  # Rendering
             clear_screen(screen)
             
-            debug_draw(simulation, screen)
-            draw_population(simulation, screen)
+            debug_draw(screen)
+            draw_population(screen)
             draw_sliders()
 
             draw_buttons()
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     )
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[WIDTH, HEIGHT], simulation_pars=simulation.pars, do_sliders=SLIDERS)
+    screen, clock = init_pygame(resolution=[WIDTH, HEIGHT], simulation=simulation, do_sliders=SLIDERS)
 
     if not IPYTHON_MODE:
         simulation_loop(simulation, screen, clock, fps)

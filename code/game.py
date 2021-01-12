@@ -35,7 +35,11 @@ SLIDABLE_PARAMETERS = [
     ("shark_agility",       1),
 ]
 
-def init_globals():
+def init_globals(sim):
+    global simulation
+
+    simulation = sim
+
     global GM
     global K
 
@@ -61,8 +65,8 @@ def init_globals():
 
 
 # Set up pygame
-def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
-    init_globals()
+def init_pygame(simulation, resolution=[1080, 720], do_sliders=True):
+    init_globals(simulation)
 
     pygame.init()
 
@@ -94,7 +98,7 @@ def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
         for n, (par, max_value) in enumerate(SLIDABLE_PARAMETERS):
             print(par, type(max_value))
             slider = LabeledSlider(
-                screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation_pars[par], min=0, max=max_value
+                screen, 10, resolution[1] - 60 - n * 40, par, initial=simulation.pars[par], min=0, max=max_value
             )
             sliders.append(slider)
 
@@ -105,17 +109,18 @@ def exit_pygame():
     pygame.quit()
 
 def save():
-    pass
+    global simulation
+    simulation.save()
 
 def load():
-    pass
-
-def load_pars(population):
-    pars = population.load()
+    global simulation
+    pars = simulation.load()
     for (par, _), slider in zip(SLIDABLE_PARAMETERS, sliders):
         slider.set_value(pars[par])
 
-def check_input(simulation):
+def check_input():
+    global simulation
+
     events = pygame.event.get()
 
     # Button interaction
@@ -213,7 +218,9 @@ def positions_to_colors(positions):
     # Convert probabilities to colors
     return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)
 
-def debug_draw(simulation: Simulation, screen):
+def debug_draw(screen):
+    global simulation
+    
     if data.selected_index == None:
         return
     selected_fish = simulation.population[data.selected_index]
@@ -251,14 +258,16 @@ def debug_draw(simulation: Simulation, screen):
 
 
 
-def draw_population(population: Simulation, screen):
-    scaling = np.array(pygame.display.get_window_size()) / population.pars.shape
+def draw_population(screen):
+    global simulation
+
+    scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
 
     # Coloring with GMM
-    positions = population.population[:,0,:]
+    positions = simulation.population[:,0,:]
     colors = positions_to_colors(positions)
 
-    for boid, boid_color in zip(population.population, colors):
+    for boid, boid_color in zip(simulation.population, colors):
         # xness = location[0] / pygame.display.get_window_size()[0]
         # if math.isnan(xness):
         #     xness = 0
@@ -292,12 +301,12 @@ def draw_population(population: Simulation, screen):
 
         # screen.blit(pygame.transform.rotate(fish, rotation), fish_rect)
 
-    for obstacle in population.obstacles:
+    for obstacle in simulation.obstacles:
         location = tuple((obstacle[0] * scaling))
 
         pygame.draw.circle(screen, (245, 40, 40), location, 6)
 
-    for shark in population.sharks:
+    for shark in simulation.sharks:
         if shark[1][1] >= 0:
             rotation = np.arccos(shark[1][0])
         else:

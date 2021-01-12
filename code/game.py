@@ -22,15 +22,15 @@ SLIDABLE_PARAMETERS = [
     ("speed",               1),
     ("agility",             1),
     ("separation_weight",   15),
-    ("separation_range",    1),
+    ("separation_range",    3),
     ("cohesion_weight",     15),
-    ("cohesion_range",      1),
+    ("cohesion_range",      3),
     ("alignment_weight",    15),
-    ("alignment_range",     1),
+    ("alignment_range",     3),
     ("obstacle_weight",     15),
-    ("obstacle_range",      1),
+    ("obstacle_range",      3),
     ("shark_weight",        15),
-    ("shark_range",         1),
+    ("shark_range",         3),
     ("shark_speed",         1),
     ("shark_agility",       1),
 ]
@@ -120,23 +120,23 @@ def check_input(simulation):
                 pass
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1: # left click = select fish
-                pos = np.array(pygame.mouse.get_pos())
-                
+            pos = np.array(pygame.mouse.get_pos())
+            if event.button == 1: # left click = check buttons
+
                 # Check all buttons
                 for rectangle, button_function in BUTTON_DATA:
                     if is_in_rect(pos, rectangle):
                         button_function()
 
+            if event.button == 3: # right click = select fish
                 scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
 
                 fish_rel = simulation.population[:, 0, :] - scaled
                 distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
 
-                global selected_index
-                selected_index = np.argmin(distances)
+                data.selected_index = np.argmin(distances)
 
-            if event.button == 2: # right click place obstacle
+            if event.button == 2: # middle click place obstacle
                 pos = np.array(pygame.mouse.get_pos())
                 scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
 
@@ -217,12 +217,10 @@ def positions_to_colors(positions):
     # Convert probabilities to colors
     return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)
 
-selected_index = None
-
 def debug_draw(simulation: Simulation, screen):
-    if selected_index == None:
+    if data.selected_index == None:
         return
-    selected_fish = simulation.population[selected_index]
+    selected_fish = simulation.population[data.selected_index]
     scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
 
     location = selected_fish[0] * scaling
@@ -309,7 +307,7 @@ def draw_population(population: Simulation, screen):
         else:
             rotation = -np.arccos(shark[1][0])
 
-        draw_fish(screen, shark[0] * scaling, rotation, (117,57,57), 120, 40)
+        draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 60, 30)
 
     return True
 
@@ -329,6 +327,33 @@ def draw_fish(surface, position, rotation, color=BOID_COLOR, length=30, width=15
         [-0.5 * length, -0.5 * width],
         [-0.25 * length, -0.1 * width],
         [0.25 * length, -0.5 * width]
+        ]
+    )
+
+    c, s = np.cos(rotation), np.sin(rotation)
+    R = np.array(((c, -s), (s, c)))
+
+    rotated = R.dot(head_up_down.T).T
+
+    rotated += position
+
+    positions = [(int(np.round(a)), int(np.round(b))) for a, b in rotated]
+
+    pygame.draw.polygon(surface, color, positions, width=0)
+
+def draw_shark(surface, position, rotation, color, length, width):
+    head_up_down = np.array(
+        [[1.2 * length, -0.1 * width],
+        [0.7 * length, 0 * width],
+        [1.2 * length, 0.1 * width],
+        [0.6 * length, 0.35 * width],
+        [0.45 * length, 0.6 * width],
+        [0.4 * length, 0.35 * width],
+        [-0.25 * length, 0.1 * width],
+        [-0.4 * length, 0.5 * width],
+        [-0.5 * length, -0.5 * width],
+        [-0.25 * length, -0.1 * width],
+        [0.25 * length, -0.35 * width]
         ]
     )
 

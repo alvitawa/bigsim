@@ -70,11 +70,20 @@ def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
 
     screen = pygame.display.set_mode(resolution)
 
-    global BUTTON_DATA
-    BUTTON_DATA = [
-#   Button rectangle                            function
-        [[0, screen.get_height()-20, 20, 20],   toggle_menu],
+    button_data = [
+#       Button rectangle                               function                     TEXT
+        [[0, screen.get_height()-60, 60, 60],          toggle_menu,                 "MENU"],
+        [[screen.get_width()-130, screen.get_height() - 60, 60, 60],   save,        "SAVE"],
+        [[screen.get_width()-60, screen.get_height() - 60, 60, 60],    load,        "LOAD"]
     ]
+
+    global BUTTONS
+    BUTTONS = []
+    for rect, func, text in button_data:
+        button = Button(screen, rect[0], rect[1], rect[2], rect[3],
+                        text=text,
+                        onClick=func)
+        BUTTONS.append(button)
 
     clock = pygame.time.Clock()
 
@@ -95,6 +104,12 @@ def init_pygame(simulation_pars, resolution=[1080, 720], do_sliders=True):
 def exit_pygame():
     pygame.quit()
 
+def save():
+    pass
+
+def load():
+    pass
+
 def load_pars(population):
     pars = population.load()
     for (par, _), slider in zip(SLIDABLE_PARAMETERS, sliders):
@@ -102,6 +117,10 @@ def load_pars(population):
 
 def check_input(simulation):
     events = pygame.event.get()
+
+    # Button interaction
+    for button in BUTTONS:
+        button.listen(events)
 
     # Update sliders
     for (par, _), slider in zip(SLIDABLE_PARAMETERS, sliders):
@@ -120,13 +139,6 @@ def check_input(simulation):
                 pass
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            pos = np.array(pygame.mouse.get_pos())
-            if event.button == 1: # left click = check buttons
-
-                # Check all buttons
-                for rectangle, button_function in BUTTON_DATA:
-                    if is_in_rect(pos, rectangle):
-                        button_function()
 
             if event.button == 3: # right click = select fish
                 scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
@@ -151,11 +163,6 @@ def clear_screen(screen):
     # Fill ocean background
     screen.fill(OCEAN_COLOR)
 
-def is_in_rect(coordinates, rect):
-    in_x = (rect[0] <= coordinates[0] <= rect[0]+rect[2])
-    in_y = (rect[1] <= coordinates[1] <= rect[3]+rect[1])
-    return in_x and in_y
-
 def draw_sliders():
     if MENU:
         for slider in sliders:
@@ -166,27 +173,16 @@ def toggle_menu():
     global MENU
     MENU = not MENU
 
-def draw_button(surface, rectangle, color=[255, 255, 255], hover=False):
-    if hover: 
-        # Light is same color minus 10
-        color_light = np.max(np.vstack([[0, 0, 0], np.array(color)-100]), axis=0) # This should be easier ?
-
-        pygame.draw.rect(surface,color_light,rectangle) 
-    else: 
-        pygame.draw.rect(surface,color,rectangle) 
-
-def draw_buttons(screen):
-    global BUTTON_DATA
-    for rectangle, _ in BUTTON_DATA:
-
-        mouse = pygame.mouse.get_pos() 
-        if ( is_in_rect(mouse, rectangle) ): 
-            hover = True
-        else:
-            hover = False
-
-        draw_button(screen, rectangle, hover=hover)
-
+def draw_buttons():
+    global BUTTONS
+    for button in BUTTONS:
+        # Always draw menu button
+        if button.string == "MENU":
+            button.draw()
+        # Draw other buttons with menu
+        elif (MENU):
+            button.draw()
+            
 def draw_number(screen, number):
     '''Displays a fps number on the screen'''
     font = pygame.font.SysFont('arial', 50)
@@ -243,7 +239,7 @@ def debug_draw(simulation: Simulation, screen):
     assigned_box = selected_fish[0] // simulation.grid_size
     grid_coordinates = simulation.population[:, 0, :] // simulation.grid_size
     outer_idx = (np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= simulation.box_sight_radius)
-    cohesion, seperation, alignment, obstacle, shark = data.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
+    cohesion, seperation, alignment, obstacle, wall, shark = data.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
 
     pygame.draw.line(screen, OBSTACLE_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + obstacle) * scaling))
     pygame.draw.line(screen, SHARK_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + shark) * scaling))

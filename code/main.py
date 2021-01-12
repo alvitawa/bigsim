@@ -49,7 +49,7 @@ def simulation_loop(simulation, screen, clock, fps):
             draw_population(simulation, screen)
             draw_sliders()
 
-            draw_buttons(screen)
+            draw_buttons()
 
             # Fps counter
             draw_number(screen, int(clock.get_fps()))
@@ -146,7 +146,7 @@ if __name__ == "__main__":
     )
 
     # Init pygame
-    screen, clock = init_pygame(resolution=[980, 980], simulation_pars=simulation.pars, do_sliders=SLIDERS)
+    screen, clock = init_pygame(resolution=[980, 600], simulation_pars=simulation.pars, do_sliders=SLIDERS)
 
     if not IPYTHON_MODE:
         simulation_loop(simulation, screen, clock, fps)

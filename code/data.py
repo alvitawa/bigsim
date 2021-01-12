@@ -2,6 +2,8 @@ from sys import is_finalizing
 from timeit import default_timer
 from typing import Any, Callable
 from dataclasses import field
+
+from numpy.lib.function_base import select
 from boid import Boid
 import json
 import numpy as np
@@ -16,49 +18,7 @@ from functools import partial
 from dataclasses import dataclass
 from dataclasses_json import config, DataClassJsonMixin, dataclass_json
 
-def exponential_weight_function(distances, inner_diameter, outer_diameter):
-    pass
-
-
-def gausst(distances, range, weight):
-    result = stats.norm.pdf(distances / range) * np.exp(weight)
-    return result
-
-
-def gaussian_pos_wf(distances, pars):
-    cohesion = stats.norm.pdf(distances / pars.cohesion_range) * np.exp(
-        pars.cohesion_weight
-    )
-    separation = stats.norm.pdf(distances / pars.separation_range) * np.exp(
-        pars.separation_weight
-    )
-    return cohesion - separation
-
-
-def gaussian_dir_wf(distances, pars):
-    return stats.norm.pdf(distances / pars.alignment_range) * np.exp(
-        pars.alignment_weight
-    )
-
-
-def gaussian_obs_wf(distances, pars):
-    return -stats.norm.pdf(distances / pars.obstacle_range) * np.exp(
-        pars.obstacle_weight
-    )
-
-
-def sq_pos_wf(distances, pars):
-    close = distances < pars.separation_range
-    far = distances < pars.cohesion_range - close
-    return -pars.separation_weight * close + pars.cohesion_weight * far
-
-
-def sq_dir_wf(distances, pars):
-    return (distances < pars.alignment_range) * pars.alignment_weight
-
-
-def identity_wf(distances, _=None):
-    return distances == 0
+selected_index = None
 
 def find_eaten_fish(distances):
     loca = np.where(distances<0.3)
@@ -71,6 +31,15 @@ def delete_fish(population, indexes):
     dead_fish = population[indexes]
     alive_fish = np.delete(population, indexes, 0)
     # delete
+
+    # updated selected fish
+    global selected_index
+    if selected_index != None:
+        if selected_index in indexes:
+            selected_index = None
+        else:
+            selected_index -= sum(indexes < selected_index)
+
     return alive_fish
 
 
@@ -270,22 +239,22 @@ def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
 
     # Cohesion: move to weighted center of mass of school
-    cohesion_weights = stats.norm.pdf(distances / (pars.cohesion_range*2)) # range indicates 2 deviations (98%)
+    cohesion_weights = stats.norm.pdf(distances / (pars.cohesion_range*2)) if (pars.cohesion_range != 0) else np.zeros_like(distances)
     center_off_mass = (neighbours_rel * cohesion_weights[:, :, None]).sum(axis=0)
 
     # Seperation: move away from very close fish
-    seperation_weights = stats.norm.pdf(distances / (pars.separation_range*2)) # range indicates 2 deviations (98%)
+    seperation_weights = stats.norm.pdf(distances / (pars.separation_range*2)) if (pars.separation_range != 0) else np.zeros_like(distances)
     move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
 
     # Alignment: align with nearby fish
-    alignment_weights = stats.norm.pdf(distances / (pars.alignment_range*2)) # range indicates 2 deviations (98%)
+    alignment_weights = stats.norm.pdf(distances / (pars.alignment_range*2)) if (pars.alignment_range != 0) else np.zeros_like(distances)
     target_alignment = (neighbours[:, None, 1, :] * alignment_weights[:, :, None]).sum(axis=0)
 
     # --- Obstacles ---
     obstacles_rel = obstacles - fish[:, 0, :]
     obs_distances = np.sqrt(np.power(obstacles_rel, 2).sum(axis=-1))
 
-    obstacle_weights = stats.norm.pdf(obs_distances / (pars.obstacle_range*2)) # range indicates 2 deviations (98%)
+    obstacle_weights = stats.norm.pdf(obs_distances / (pars.obstacle_range*2)) if (pars.obstacle_range != 0) else np.zeros_like(distances)
     obstacle_target = -1 * (obstacles_rel * obstacle_weights[:, :, None]).sum(axis=0)
 
     wall_target = None
@@ -293,7 +262,7 @@ def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     sharks_rel = sharks[:, None, 0, :] - fish[:, 0, :]
     shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
 
-    shark_weights = stats.norm.pdf(shark_distances / (pars.shark_range*2)) # range indicates 2 deviations (98%)
+    shark_weights = stats.norm.pdf(shark_distances / (pars.shark_range*2)) if (pars.shark_range != 0) else np.zeros_like(distances)
     sharks_target = -1 * (sharks_rel * shark_weights[:, :, None]).sum(axis=0)
     # We could also do like turn away from the direction of the shark
 
@@ -345,9 +314,8 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
     fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
     distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
     
-    
-
-    fish_weights = stats.norm.pdf(distances / (pars.cohesion_range*2)) # fuck it use cohesion weight for now
+    # TODO: DIFFERENT PARAMETERS for SHARKS
+    fish_weights = stats.norm.pdf(distances / (pars.cohesion_range*2))  if (pars.cohesion_range != 0) else np.zeros_like(distances)
     center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
 
     # Todo: we could also add obstacle avoidance etc.

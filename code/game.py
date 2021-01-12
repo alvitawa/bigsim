@@ -119,8 +119,7 @@ def check_input(simulation):
                 fish_rel = simulation.population[:, 0, :] - scaled
                 distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
 
-                global selected_index
-                selected_index = np.argmin(distances)
+                data.selected_index = np.argmin(distances)
 
             if event.button == 2: # right click place obstacle
                 pos = np.array(pygame.mouse.get_pos())
@@ -172,12 +171,10 @@ def positions_to_colors(positions):
     # Convert probabilities to colors
     return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)
 
-selected_index = None
-
 def debug_draw(simulation: Simulation, screen):
-    if selected_index == None:
+    if data.selected_index == None:
         return
-    selected_fish = simulation.population[selected_index]
+    selected_fish = simulation.population[data.selected_index]
     scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
 
     location = selected_fish[0] * scaling

@@ -100,13 +100,13 @@ def load_pars(population):
     for (par, _), slider in zip(SLIDABLE_PARAMETERS, sliders):
         slider.set_value(pars[par])
 
-def check_input(population):
+def check_input(simulation):
     events = pygame.event.get()
 
     # Update sliders
     for (par, _), slider in zip(SLIDABLE_PARAMETERS, sliders):
         slider.update(events)
-        population.pars[par] = slider.get_value()
+        simulation.pars[par] = slider.get_value()
 
     # Keyboard presses
     for event in events:
@@ -120,19 +120,29 @@ def check_input(population):
                 pass
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1: # left click
+            if event.button == 1: # left click = select fish
                 pos = np.array(pygame.mouse.get_pos())
-
+                
                 # Check all buttons
                 for rectangle, button_function in BUTTON_DATA:
                     if is_in_rect(pos, rectangle):
                         button_function()
 
-                scaled = pos / np.array(pygame.display.get_window_size()) * population.pars.shape
+                scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
 
-                new_shape = np.array(population.obstacles.shape)
+                fish_rel = simulation.population[:, 0, :] - scaled
+                distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
+
+                global selected_index
+                selected_index = np.argmin(distances)
+
+            if event.button == 2: # right click place obstacle
+                pos = np.array(pygame.mouse.get_pos())
+                scaled = pos / np.array(pygame.display.get_window_size()) * simulation.pars.shape
+
+                new_shape = np.array(simulation.obstacles.shape)
                 new_shape[0] += 1
-                population.obstacles = np.append(population.obstacles, scaled).reshape(new_shape)
+                simulation.obstacles = np.append(simulation.obstacles, scaled).reshape(new_shape)
 
     return False
 
@@ -178,11 +188,11 @@ def draw_buttons(screen):
         draw_button(screen, rectangle, hover=hover)
 
 def draw_number(screen, number):
-        '''Displays a fps number on the screen'''
-        font = pygame.font.SysFont('arial', 50)
-        text = font.render(str(number), True, np.abs(np.array(OCEAN_COLOR)-255))
-        screen.blit(text, (0,0))
-        # pygame.display.update()
+    '''Displays a fps number on the screen'''
+    font = pygame.font.SysFont('arial', 50)
+    text = font.render(str(number), True, np.abs(np.array(OCEAN_COLOR)-255))
+    screen.blit(text, (0,0))
+    # pygame.display.update()
 
 def positions_to_colors(positions):
     global GM
@@ -206,6 +216,46 @@ def positions_to_colors(positions):
 
     # Convert probabilities to colors
     return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)
+
+selected_index = None
+
+def debug_draw(simulation: Simulation, screen):
+    if selected_index == None:
+        return
+    selected_fish = simulation.population[selected_index]
+    scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
+
+    location = selected_fish[0] * scaling
+
+    OBSTACLE_COLOR = (255, 0, 0)
+    SEPERATION_COLOR = (255, 0, 255)
+    COHESION_COLOR = (0, 255, 0)
+    ALIGNMENT_COLOR = (0, 128, 128)
+    SHARK_COLOR = (200, 200, 200)
+
+    # draw ranges
+    pygame.draw.circle(screen, OBSTACLE_COLOR, tuple(location), int(simulation.pars.obstacle_range * scaling[0]), width=1)
+    pygame.draw.circle(screen, SHARK_COLOR, tuple(location), int(simulation.pars.shark_range * scaling[0]), width=1)
+
+    pygame.draw.circle(screen, SEPERATION_COLOR, tuple(location), int(simulation.pars.separation_range * scaling[0]), width=1)
+    pygame.draw.circle(screen, COHESION_COLOR, tuple(location), int(simulation.pars.cohesion_range * scaling[0]), width=1)
+    pygame.draw.circle(screen, ALIGNMENT_COLOR, tuple(location), int(simulation.pars.alignment_range * scaling[0]), width=1)
+
+    # get vectors
+    assigned_box = selected_fish[0] // simulation.grid_size
+    grid_coordinates = simulation.population[:, 0, :] // simulation.grid_size
+    outer_idx = (np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= simulation.box_sight_radius)
+    cohesion, seperation, alignment, obstacle, shark = data.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
+
+    pygame.draw.line(screen, OBSTACLE_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + obstacle) * scaling))
+    pygame.draw.line(screen, SHARK_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + shark) * scaling))
+    
+    pygame.draw.line(screen, SEPERATION_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + seperation) * scaling))
+    pygame.draw.line(screen, COHESION_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + cohesion) * scaling))
+    pygame.draw.line(screen, ALIGNMENT_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + alignment) * scaling))
+
+
+
 
 def draw_population(population: Simulation, screen):
     scaling = np.array(pygame.display.get_window_size()) / population.pars.shape

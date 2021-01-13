@@ -2,23 +2,23 @@
     "agility": 0.2,
     "alignment_range": 0.8,
     "alignment_weight": 0.01,
-    "boid_count": 200,
+    "boid_count": 500,
     "cohesion_range": 0.85,
     "cohesion_weight": 0.2,
     "obstacle_range": 0.9,
     "obstacle_weight": 15.0,
     "separation_range": 0.4,
-    "separation_weight": 40,
+    "separation_weight": 15,
     "shape": [
         10,
         7
     ],
     "shark_agility": 0.09,
-    "shark_count": 1,
-    "shark_range": 1.4,
-    "shark_weight": 40,
-    "shark_speed": 0.015,
+    "shark_count": 3,
+    "shark_range": 1.4000000000000001,
+    "shark_speed": 0.02,
+    "shark_weight": 15,
     "speed": 0.02,
-    "wall_weight": 100,
-    "wall_range": 1.0
+    "wall_range": 0.75,
+    "wall_weight": 140
 }

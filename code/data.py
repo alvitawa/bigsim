@@ -18,6 +18,8 @@ from functools import partial
 from dataclasses import dataclass
 from dataclasses_json import config, DataClassJsonMixin, dataclass_json
 
+import pygame
+
 selected_index = None
 
 def find_eaten_fish(distances):
@@ -335,6 +337,9 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
 
     steer_direction = sum(list(vectors))  # this would be nicer with np.sum(some_axis)
     steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
+
+
+
 
     # print("Steer: ", steer_normed.shape)
 

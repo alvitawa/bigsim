@@ -7,6 +7,7 @@ import numpy as np
 import math
 
 from sklearn.mixture import GaussianMixture
+from sklearn.cluster import DBSCAN
 
 import warnings
 from sklearn.exceptions import ConvergenceWarning
@@ -206,19 +207,22 @@ def positions_to_colors(positions):
     global COLORS
 
     # New GMM based on GMM of last iteration
-    GM = GaussianMixture(n_components=K, 
-                        max_iter=10, 
-                        tol=1e-4,
-                        means_init=GM.means_,
-                        weights_init=GM.weights_,
-                        verbose=0)
+    # GM = GaussianMixture(n_components=K, 
+    #                     max_iter=10, 
+    #                     tol=1e-4,
+    #                     means_init=GM.means_,
+    #                     weights_init=GM.weights_,
+    #                     verbose=0)
     
     # No convergence warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=ConvergenceWarning)
-        GM.fit(positions)
+        # GM.fit(positions)
+        clustering = DBSCAN(eps=3, min_samples=2).fit(positions)
 
-    probs = GM.predict_proba(positions)
+    # probs = GM.predict_proba(positions)
+    probs = clustering.labels_
+    return COLORS[probs]
 
     # Convert probabilities to colors
     return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)

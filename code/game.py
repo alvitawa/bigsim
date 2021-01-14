@@ -8,6 +8,7 @@ import math
 
 from sklearn.mixture import GaussianMixture
 from sklearn.cluster import DBSCAN
+from LarsClusteringMethods import LarsClustering
 
 import warnings
 from sklearn.exceptions import ConvergenceWarning
@@ -48,21 +49,23 @@ def init_globals(sim):
     global MENU
     MENU = False
 
-    K = 5
+    K = 50
 
     # Init K different colors
     COLORS = np.random.choice(range(256), size=3*K).reshape(K, 3)
 
-    GM = GaussianMixture(n_components=K, 
-                    max_iter=1000, 
-                    tol=1e-4,
-                    init_params='random',
-                    verbose=0)
+    # GM = GaussianMixture(n_components=K, 
+    #                 max_iter=1000, 
+    #                 tol=1e-4,
+    #                 init_params='random',
+    #                 verbose=0)
 
-    # No convergence warnings
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=ConvergenceWarning)
-        GM.fit(np.random.rand(K, 2))
+    # # No convergence warnings
+    # with warnings.catch_warnings():
+    #     warnings.filterwarnings("ignore", category=ConvergenceWarning)
+    #     GM.fit(np.random.rand(K, 2))
+
+    GM = LarsClustering(sim.population)
 
 
 # Set up pygame
@@ -215,14 +218,19 @@ def positions_to_colors(positions):
     #                     verbose=0)
     
     # No convergence warnings
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=ConvergenceWarning)
-        # GM.fit(positions)
-        clustering = DBSCAN(eps=3, min_samples=2).fit(positions)
+    # with warnings.catch_warnings():
+        # warnings.filterwarnings("ignore", category=ConvergenceWarning)
+        # # GM.fit(positions)
+        # clustering = DBSCAN(eps=3, min_samples=2).fit(positions)
+    
+
 
     # probs = GM.predict_proba(positions)
-    probs = clustering.labels_
-    return COLORS[probs]
+    # probs = clustering.labels_
+    # return COLORS[probs]
+
+    assignments = GM.fit(positions)
+    return COLORS[assignments]
 
     # Convert probabilities to colors
     return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)

@@ -72,6 +72,9 @@ class Parameters:
     shark_weight: float = 1.8
     shark_range: float = 0.7
 
+    separation_range_shark: float = 1
+    separation_weight_shark: float = 15
+
     shark_speed: float = 0.05
     shark_agility: float = 0.09
 
@@ -317,6 +320,15 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
 
 
 def move_sharks(sharks, fish, obstacles, pars: Parameters):
+    # Shark seperation
+    neighbours_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
+    sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
+
+    seperation_weights = distance_to_weights(sqr_distances, pars.separation_range_shark)
+    move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
+
+    seperation = np.nan_to_num(move_away_target * pars.separation_weight_shark)
+
     # Chase: move to weighted center of mass of fish
     fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
     distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
@@ -333,7 +345,7 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
     chase = np.nan_to_num(center_off_mass * pars.cohesion_weight)
 
     # Combine them to make the steering direction
-    vectors = np.array([chase])
+    vectors = np.array([chase, seperation])
 
     steer_direction = sum(list(vectors))  # this would be nicer with np.sum(some_axis)
     steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]

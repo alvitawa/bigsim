@@ -23,7 +23,7 @@ import pygame
 selected_index = None
 
 def find_eaten_fish(distances):
-    loca = np.where(distances<0.3)
+    loca = np.where(distances<0.2)
     indx = loca[0]
     return np.unique(indx)
 

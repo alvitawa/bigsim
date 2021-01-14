@@ -18,6 +18,8 @@ from functools import partial
 from dataclasses import dataclass
 from dataclasses_json import config, DataClassJsonMixin, dataclass_json
 
+import pygame
+
 selected_index = None
 
 def find_eaten_fish(distances):
@@ -290,9 +292,9 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     vectors = np.array([cohesion, seperation, alignment, obstacle, wall, shark])
 
     steer_direction = sum(vectors)  # this would be nicer with np.sum(some_axis)
-    lengths = np.linalg.norm(steer_direction, axis=1)[:, None]
-    lengths[lengths == 0] = 1
-    steer_normed = steer_direction / lengths
+    confidence = np.linalg.norm(steer_direction, axis=1)[:, None]
+    confidence[confidence == 0] = 1
+    steer_normed = steer_direction / confidence
 
     # print("Steer: ", steer_normed.shape)
 
@@ -304,7 +306,7 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     updated_fish[:, 1, :] = new_direction / lengths
 
     # move da fish
-    updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed
+    updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed * np.log(confidence) / 100
 
     # check for error
     nans = np.argwhere(np.isnan(updated_fish))
@@ -335,6 +337,9 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
 
     steer_direction = sum(list(vectors))  # this would be nicer with np.sum(some_axis)
     steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
+
+
+
 
     # print("Steer: ", steer_normed.shape)
 

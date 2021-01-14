@@ -237,6 +237,7 @@ def debug_draw(screen):
 
     location = selected_fish[0] * scaling
 
+    WALL_COLOR = (0, 0, 255)
     OBSTACLE_COLOR = (255, 0, 0)
     SEPERATION_COLOR = (255, 0, 255)
     COHESION_COLOR = (0, 255, 0)
@@ -244,6 +245,7 @@ def debug_draw(screen):
     SHARK_COLOR = (200, 200, 200)
 
     # draw ranges
+    pygame.draw.circle(screen, WALL_COLOR, tuple(location), int(simulation.pars.wall_range * scaling[0]), width=1)
     pygame.draw.circle(screen, OBSTACLE_COLOR, tuple(location), int(simulation.pars.obstacle_range * scaling[0]), width=1)
     pygame.draw.circle(screen, SHARK_COLOR, tuple(location), int(simulation.pars.shark_range * scaling[0]), width=1)
 
@@ -251,18 +253,26 @@ def debug_draw(screen):
     pygame.draw.circle(screen, COHESION_COLOR, tuple(location), int(simulation.pars.cohesion_range * scaling[0]), width=1)
     pygame.draw.circle(screen, ALIGNMENT_COLOR, tuple(location), int(simulation.pars.alignment_range * scaling[0]), width=1)
 
+
+
     # get vectors
     assigned_box = selected_fish[0] // simulation.grid_size
     grid_coordinates = simulation.population[:, 0, :] // simulation.grid_size
     outer_idx = (np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= simulation.box_sight_radius)
-    cohesion, seperation, alignment, obstacle, wall, shark = data.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
+    vectors = data.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
 
-    pygame.draw.line(screen, OBSTACLE_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + obstacle) * scaling))
-    pygame.draw.line(screen, SHARK_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + shark) * scaling))
+    total_norm = np.sum(np.linalg.norm(np.array(vectors)))
+
+    HUNDRED_PERCENT_SIZE = 1
+    vectors /= total_norm * HUNDRED_PERCENT_SIZE
+
+    pygame.draw.line(screen, WALL_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + vectors[4]) * scaling))
+    pygame.draw.line(screen, OBSTACLE_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + vectors[3]) * scaling))
+    pygame.draw.line(screen, SHARK_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + vectors[5]) * scaling))
     
-    pygame.draw.line(screen, SEPERATION_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + seperation) * scaling))
-    pygame.draw.line(screen, COHESION_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + cohesion) * scaling))
-    pygame.draw.line(screen, ALIGNMENT_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + alignment) * scaling))
+    pygame.draw.line(screen, SEPERATION_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + vectors[1]) * scaling))
+    pygame.draw.line(screen, COHESION_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + vectors[0]) * scaling))
+    pygame.draw.line(screen, ALIGNMENT_COLOR, tuple(selected_fish[0] * scaling), tuple((selected_fish[0] + vectors[2]) * scaling))
 
 
 

@@ -2,7 +2,7 @@
     "agility": 0.2,
     "alignment_range": 0.8,
     "alignment_weight": 0.01,
-    "boid_count": 500,
+    "boid_count": 250,
     "cohesion_range": 0.85,
     "cohesion_weight": 0.2,
     "obstacle_range": 0.9,
@@ -20,5 +20,5 @@
     "shark_weight": 15,
     "speed": 0.02,
     "wall_range": 0.75,
-    "wall_weight": 140
+    "wall_weight": 100
 }

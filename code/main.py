@@ -1,5 +1,6 @@
 from boid import *
 from data import *
+from game import *
 
 import pdb
 import sys
@@ -121,7 +122,6 @@ def pars():
     return simulation.pars
 
 if __name__ == "__main__":
-    from game import *
 
     size = 10
 

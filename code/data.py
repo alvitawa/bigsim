@@ -234,7 +234,7 @@ def stable_norm(array):
 def distance_to_weights(sqr_distances, range):
     if range == 0:
         return np.zeros_like(sqr_distances)
-    return np.exp(-(sqr_distances / (range/2.0)**2))
+    return np.exp(-(sqr_distances / (range/3.0)**2))
 
 def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     # --- Fish Schooling ---

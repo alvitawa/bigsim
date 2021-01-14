@@ -309,7 +309,7 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     updated_fish[:, 1, :] = new_direction / lengths
 
     # move da fish
-    updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed * np.log(confidence) / 100
+    updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed * (1 / (1 + np.exp(-(confidence - 500)/100)) + 1)
 
     # check for error
     nans = np.argwhere(np.isnan(updated_fish))

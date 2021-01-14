@@ -357,17 +357,17 @@ def draw_fish(surface, position, rotation, color=BOID_COLOR, length=30, width=15
 
 def draw_shark(surface, position, rotation, color, length, width):
     head_up_down = np.array(
-        [[1.2 * length, -0.1 * width],
-        [0.7 * length, 0 * width],
-        [1.2 * length, 0.1 * width],
-        [0.6 * length, 0.35 * width],
-        [0.45 * length, 0.6 * width],
-        [0.4 * length, 0.35 * width],
-        [-0.25 * length, 0.1 * width],
-        [-0.4 * length, 0.5 * width],
-        [-0.5 * length, -0.5 * width],
-        [-0.25 * length, -0.1 * width],
-        [0.25 * length, -0.35 * width]
+        [[1.2 * length - length / 1.2, -0.1 * width],
+        [0.7 * length - length / 1.2, 0 * width],
+        [1.2 * length - length / 1.2, 0.1 * width],
+        [0.6 * length - length / 1.2, 0.35 * width],
+        [0.45 * length - length / 1.2, 0.6 * width],
+        [0.4 * length - length / 1.2, 0.35 * width],
+        [-0.25 * length - length / 1.2, 0.1 * width],
+        [-0.4 * length - length / 1.2, 0.5 * width],
+        [-0.5 * length - length / 1.2, -0.5 * width],
+        [-0.25 * length - length / 1.2, -0.1 * width],
+        [0.5 * length - length / 1.2, -0.2 * width]
         ]
     )
 

@@ -194,11 +194,11 @@ def draw_buttons():
         elif (MENU):
             button.draw()
             
-def draw_number(screen, number):
+def draw_number(screen, number, location, color):
     '''Displays a fps number on the screen'''
     font = pygame.font.SysFont('arial', 50)
-    text = font.render(str(number), True, np.abs(np.array(OCEAN_COLOR)-255))
-    screen.blit(text, (0,0))
+    text = font.render(str(number), True, color)
+    screen.blit(text, location)
     # pygame.display.update()
 
 def positions_to_colors(positions):

@@ -18,8 +18,6 @@ from functools import partial
 from dataclasses import dataclass
 from dataclasses_json import config, DataClassJsonMixin, dataclass_json
 
-import pygame
-
 selected_index = None
 
 def find_eaten_fish(distances):
@@ -53,6 +51,10 @@ class Parameters:
 
     speed: float = 0.05
     agility: float = 0.2
+
+    speedup_lower_threshold: float = 10
+    speedup_upper_threshold: float = 100
+    speedup_factor = 2
 
     separation_weight: float = 1.4
     separation_range: float = 0.2
@@ -276,23 +278,23 @@ def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     sharks_target = -1 * (sharks_rel * shark_weights[:, :, None]).sum(axis=0)
     # We could also do like turn away from the direction of the shark
 
-    # Normalize directions and weigh them
+    # Weigh directions
     cohesion = np.nan_to_num(center_off_mass * pars.cohesion_weight)
-    seperation = np.nan_to_num(move_away_target * pars.separation_weight)
+    separation = np.nan_to_num(move_away_target) * pars.separation_weight * (1 + pars.separation_weight*np.linalg.norm(cohesion, axis=1)[:, None])
     alignment = np.nan_to_num(target_alignment * pars.alignment_weight)
 
     obstacle = np.nan_to_num(obstacle_target * pars.obstacle_weight)
     wall = np.nan_to_num(wall_target * pars.wall_weight)
     shark = np.nan_to_num(sharks_target * pars.shark_weight)
 
-    return cohesion, seperation, alignment, obstacle, wall, shark
+    return cohesion, separation, alignment, obstacle, wall, shark
 
 def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     # --- Get vectors ---
-    cohesion, seperation, alignment, obstacle, wall, shark = fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
+    cohesion, separation, alignment, obstacle, wall, shark = fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
 
     # Combine them to make the steering direction
-    vectors = np.array([cohesion, seperation, alignment, obstacle, wall, shark])
+    vectors = np.array([cohesion, separation, alignment, obstacle, wall, shark])
 
     steer_direction = sum(vectors)  # this would be nicer with np.sum(some_axis)
     confidence = np.linalg.norm(steer_direction, axis=1)[:, None]
@@ -309,7 +311,7 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     updated_fish[:, 1, :] = new_direction / lengths
 
     # move da fish
-    updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed * (1 / (1 + np.exp(-(confidence - 500)/100)) + 1)
+    updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed #* (1 / (1 + np.exp(-(confidence - 500)/100)) + 1)
 
     # check for error
     nans = np.argwhere(np.isnan(updated_fish))

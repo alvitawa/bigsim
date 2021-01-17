@@ -290,35 +290,46 @@ def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
     return cohesion, separation, alignment, obstacle, wall, shark
 
 def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
+    """
+        Updates the first parameter 'fish'
+    """
+    
+    # This array will be updated with the new positions for the inner fish
+    fish = np.copy(fish, order='C')
+
     # --- Get vectors ---
-    cohesion, separation, alignment, obstacle, wall, shark = fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
+    vectors = fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
 
-    # Combine them to make the steering direction
-    vectors = np.array([cohesion, separation, alignment, obstacle, wall, shark])
-
-    steer_direction = sum(vectors)  # this would be nicer with np.sum(some_axis)
-    confidence = np.linalg.norm(steer_direction, axis=1)[:, None]
-    confidence[confidence == 0] = 1
-    steer_normed = steer_direction / confidence
+    steer_direction = sum(vectors).view(np.complex128)  # this would be nicer with np.sum(some_axis)
+    # confidence = np.linalg.norm(steer_direction, axis=1)[:, None]
+    # confidence[confidence == 0] = 1
+    # steer_normed = steer_direction #/ confidence
 
     # print("Steer: ", steer_normed.shape)
 
     # Combine current direction and steering direction
-    updated_fish = np.copy(fish)
 
-    new_direction = fish[:, 1, :] + steer_normed * pars.agility
-    lengths = np.linalg.norm(new_direction, axis=1)[:, None]
-    updated_fish[:, 1, :] = new_direction / lengths
+    old_direction = fish.view(np.complex128)[:, 1]
+    delta = (steer_direction / old_direction)**(pars.agility)
+
+    new_direction = old_direction * delta
+    new_direction /= np.abs(new_direction)
+
+    fish[:, 1, :] = new_direction.view(np.float64)
+
+    # new_direction = fish[:, 1, :] + steer_normed * pars.agility
+    # lengths = np.linalg.norm(new_direction, axis=1)[:, None]
+    # updated_fish[:, 1, :] = new_direction / lengths
 
     # move da fish
-    updated_fish[:, 0, :] += updated_fish[:, 1, :] * pars.speed #* (1 / (1 + np.exp(-(confidence - 500)/100)) + 1)
+    fish[:, 0, :] += fish[:, 1, :] * pars.speed #* (1 / (1 + np.exp(-(confidence - 500)/100)) + 1)
 
     # check for error
-    nans = np.argwhere(np.isnan(updated_fish))
+    nans = np.argwhere(np.isnan(fish))
     if nans.shape[0] > 0:
         raise Exception(f"{nans.shape[0]} NaN's encountered in move_fish")
-
-    return updated_fish
+    
+    return fish
 
 
 def move_sharks(sharks, fish, obstacles, pars: Parameters):
@@ -392,8 +403,8 @@ def task(
         np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= box_sight_radius
     )
 
-    new_inner = move_fish(
+    inner_fish = move_fish(
         population[inner_idx], population[outer_idx], obstacles, sharks, pars
     )
 
-    return inner_idx, new_inner
+    return inner_idx, inner_fish

@@ -91,12 +91,11 @@ class Parameters:
 
 
 def generate_population(n, env_size):
-    population = np.random.rand(n, 2) + 1j*np.random.rand(n, 2)
+    population = np.random.rand(n, 2, 2)
+    population[:, 0, :] *= env_size
 
-    population[:, 0] = population.real[:, 0] * env_size[0] + population.imag[:, 0] * env_size[1]
-
-    population[:, 1] -= 0.5 + 0.5j
-    population[:, 1] /= np.abs(population[:, 1])
+    population[:, 1, :] -= 0.5
+    population[:, 1, :] /= np.linalg.norm(population[:, 1, :], axis=1)[:, None]
 
     return population
 

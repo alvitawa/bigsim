@@ -295,7 +295,7 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     """
     
     # This array will be updated with the new positions for the inner fish
-    fish = np.copy(fish, order='C')
+    # fish = np.copy(fish, order='C')
 
     # --- Get vectors ---
     vectors = fish_move_vectors(fish, neighbours, obstacles, sharks, pars)

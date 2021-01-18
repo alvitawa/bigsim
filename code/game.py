@@ -221,7 +221,7 @@ def debug_draw(screen):
     assigned_box = selected_fish[0] // simulation.grid_size
     grid_coordinates = simulation.population[:, 0, :] // simulation.grid_size
     outer_idx = (np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= simulation.box_sight_radius)
-    vectors = data.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
+    vectors = simulation.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
 
     total_norm = np.sum(np.linalg.norm(np.array(vectors)))
 

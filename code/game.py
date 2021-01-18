@@ -89,7 +89,11 @@ def init_globals(sim):
 
     # Clustering / flock detection
     global CLUSTERING_METHOD
-    CLUSTERING_METHOD = "GMM"
+    CLUSTERING_METHOD = "LARS_CLUSTERING"
+
+    # LARS_CLUSTERING not compatible with sharks
+    if (len(sim.sharks) and CLUSTERING_METHOD=="LARS_CLUSTERING"):
+        CLUSTERING_METHOD = "GMM"
 
     if CLUSTERING_METHOD == "GMM":
         init_gmm()
@@ -100,7 +104,8 @@ def init_globals(sim):
     else: # DEFAULT
         init_gmm()
 
-
+def change_clustering():
+    pass
 
 # Set up pygame
 def init_pygame(simulation, resolution=[1080, 720], do_sliders=True):
@@ -116,7 +121,8 @@ def init_pygame(simulation, resolution=[1080, 720], do_sliders=True):
 #       Button rectangle                               function                     TEXT
         [[0, screen.get_height()-60, 60, 60],          toggle_menu,                 "MENU"],
         [[screen.get_width()-130, screen.get_height() - 60, 60, 60],   save,        "SAVE"],
-        [[screen.get_width()-60, screen.get_height() - 60, 60, 60],    load,        "LOAD"]
+        [[screen.get_width()-60, screen.get_height() - 60, 60, 60],    load,        "LOAD"],
+        [[screen.get_width()-200, screen.get_height() - 60, 60, 60],    change_clustering,        CLUSTERING_METHOD]
     ]
 
     global BUTTONS
@@ -345,15 +351,21 @@ def debug_draw(screen):
 
 
 
-
+om_de_zoveel = 100
+draw_count = 120
+colors = None
 def draw_population(screen):
-    global simulation
+    global simulation, colors, draw_count, om_de_zoveel
 
     scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
 
     # Coloring with GMM
     positions = simulation.population[:,0,:]
-    colors = positions_to_colors(positions)
+
+    draw_count += 1
+    if draw_count >= om_de_zoveel:
+        draw_count = 0
+        colors = positions_to_colors(positions)
 
     for boid, boid_color in zip(simulation.population, colors):
         # xness = location[0] / pygame.display.get_window_size()[0]

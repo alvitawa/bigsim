@@ -13,8 +13,8 @@ from LarsClusteringMethods import LarsClustering
 import warnings
 from sklearn.exceptions import ConvergenceWarning
 
-import data
-from data import Simulation
+
+import config
 
 OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
@@ -89,7 +89,7 @@ def init_globals(sim):
 
     # Clustering / flock detection
     global CLUSTERING_METHOD
-    CLUSTERING_METHOD = "LARS_CLUSTERING"
+    CLUSTERING_METHOD = config.CLUSTERING_METHOD
 
     # LARS_CLUSTERING not compatible with sharks
     if (len(sim.sharks) and CLUSTERING_METHOD=="LARS_CLUSTERING"):
@@ -201,9 +201,9 @@ def check_input():
                 mindin = np.min(distances)
 
                 if mindin < 1:
-                    data.selected_index = np.argmin(distances)
+                    simulation.selected_index = np.argmin(distances)
                 else:
-                    data.selected_index = None
+                    simulation.selected_index = None
 
             if event.button == 2: # middle click place obstacle
                 pos = np.array(pygame.mouse.get_pos())
@@ -308,9 +308,9 @@ def positions_to_colors(positions):
 def debug_draw(screen):
     global simulation
     
-    if data.selected_index == None:
+    if simulation.selected_index == None:
         return
-    selected_fish = simulation.population[data.selected_index]
+    selected_fish = simulation.population[simulation.selected_index]
     scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
 
     location = selected_fish[0] * scaling
@@ -337,7 +337,7 @@ def debug_draw(screen):
     assigned_box = selected_fish[0] // simulation.grid_size
     grid_coordinates = simulation.population[:, 0, :] // simulation.grid_size
     outer_idx = (np.sum(np.abs(grid_coordinates - assigned_box), axis=1) <= simulation.box_sight_radius)
-    vectors = data.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
+    vectors = simulation.fish_move_vectors(np.array([selected_fish]), simulation.population[outer_idx], simulation.obstacles, simulation.sharks, simulation.pars)
 
     total_norm = np.sum(np.linalg.norm(np.array(vectors)))
 

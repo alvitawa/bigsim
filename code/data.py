@@ -89,6 +89,16 @@ class Parameters:
     # def __post_init__(self):
     #     self.shape = np.array(self.shape)
 
+@dataclass_json
+@dataclass
+class Statistics:
+    """Number of frames (simulation iterations) between measurements"""
+    resolution = 20
+    school_count = []
+    school_sizes = []
+    boid_count = []
+    global_alignment = []
+    global_cohesion = []
 
 def generate_population(n, env_size):
     population = np.random.rand(n, 2, 2)

@@ -31,12 +31,13 @@ class LarsClustering:
         return flock
         
     def get_next_leader(self, remaining, data):
-        """
-        remaining: remaining fish
-        data: all fish
+    """
+    remaining: remaining fish
+    data: all fish
 
-        return: index of next leader in data
-        """
+    return: index of next leader in data
+    """
+
         # Get leader from saved leaders
         if self.current_leader_index < len(self.leaders):
             leader_id = self.leaders[self.current_leader_index]

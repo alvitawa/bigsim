@@ -25,6 +25,10 @@ def find_eaten_fish(distances):
     indx_shark = loca[1]
     return np.unique(indx_fish), np.unique(indx_shark)
 
+def far_away_sharks(distances):
+    loca = np.where(distances>0.4)
+    indx_shark = loca[1]
+    return np.unique(indx_shark)
 
 @dataclass_json
 @dataclass
@@ -102,6 +106,15 @@ def generate_obstacles(n, env_size):
 
     return obstacles
 
+def stable_norm(array):
+    """
+    Makes it 0 if norm is 0
+    """
+    norms = 1 / np.linalg.norm(array, axis=1)[:, None]
+    norms = np.nan_to_num(norms)
+
+    normed = array * norms
+    return normed
 
 class Simulation:
     """
@@ -164,6 +177,70 @@ class Simulation:
         with open(f, "w") as file:
             return json.dump(self.pars.to_dict(), file, indent=4, sort_keys=True)
 
+
+    def move_sharks(self, sharks, fish, obstacles, pars: Parameters):
+    # Shark seperation
+        neighbours_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
+        sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
+
+        seperation_weights = distance_to_weights(sqr_distances, pars.separation_range_shark)
+        move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
+
+        seperation = np.nan_to_num(move_away_target * pars.separation_weight_shark)
+
+        # Chase: move to weighted center of mass of fish
+        fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
+        distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
+        
+        # TODO: DIFFERENT PARAMETERS for SHARKS
+        fish_weights = stats.norm.pdf(distances / (pars.cohesion_range*2))  if (pars.cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
+        center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
+
+        # Todo: we could also add obstacle avoidance etc.
+
+        # --- Combine vectors ---
+
+        # Normalize directions and weigh them
+        chase = np.nan_to_num(center_off_mass * pars.cohesion_weight)
+
+        # Combine them to make the steering direction
+        vectors = np.array([chase, seperation])
+
+        steer_direction = sum(list(vectors))  # this would be nicer with np.sum(some_axis)
+        steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
+
+
+
+
+        # print("Steer: ", steer_normed.shape)
+
+        # Combine current direction and steering direction
+        updated_shark = np.copy(sharks)
+
+        new_direction = sharks[:, 1, :] + steer_normed * pars.shark_agility
+        # print("New Dir: ", new_direction.shape)
+        updated_shark[:, 1, :] = (
+            new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
+        )
+
+        # move da fish
+        updated_shark[:, 0, :] += updated_shark[:, 1, :] * pars.shark_speed
+
+
+        # Eating
+        eaten_fish_indexes = find_eaten_fish(distances)[0]
+        eating_sharks = find_eaten_fish(distances)[1]
+        
+        if len(eating_sharks)<2 and eating_sharks not in self.recently_ate:
+            self.recently_ate = self.recently_ate + list(eating_sharks)
+
+        far_sharks = far_away_sharks(distances)
+
+        return updated_shark, eaten_fish_indexes
+        # with Pool(processes=4) as pool:
+        #     results = pool.map(task, parameters)
+
+
     def iterate(self, pool, n=1):
         for _ in range(n):
             grid_coordinates = self.population[:, 0, :] // self.grid_size
@@ -222,7 +299,6 @@ class Simulation:
         # dead_fish = population[indexes]
         alive_fish = np.delete(population, indexes, 0)
         # delete
-
         # updated selected fish
         
         if self.selected_index != None:
@@ -337,6 +413,7 @@ class Simulation:
         topleft_target = distance_to_weights(fish[:, 0, :]**2, pars.wall_range)
         botright_target = -1 * distance_to_weights((np.array(pars.shape) - fish[:, 0, :]), pars.wall_range) 
 
+
         wall_target = topleft_target + botright_target
 
         # --- Predators ---
@@ -348,9 +425,10 @@ class Simulation:
         # We could also do like turn away from the direction of the shark
 
         # Weigh directions
-        cohesion = np.nan_to_num(center_off_mass * pars.cohesion_weight)
+        cohesion = stable_norm(center_off_mass) * pars.cohesion_weight
+        alignment = stable_norm(target_alignment) * pars.alignment_weight
+
         separation = np.nan_to_num(move_away_target) * pars.separation_weight #* (1 + pars.separation_weight*np.linalg.norm(cohesion, axis=1)[:, None])
-        alignment = np.nan_to_num(target_alignment * pars.alignment_weight)
 
         obstacle = np.nan_to_num(obstacle_target * pars.obstacle_weight)
         wall = np.nan_to_num(wall_target * pars.wall_weight)

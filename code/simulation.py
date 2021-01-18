@@ -86,6 +86,14 @@ class Statistics:
     global_alignment = []
     global_cohesion = []
 
+    def measure(self, sim):
+        if self.iterations % self.resolution != 0:
+            self.iterations += 1
+            return
+
+        self.boid_count.append()
+        self.iterations += 1
+
 def generate_population(n, env_size):
     population = np.random.rand(n, 2, 2)
     population[:, 0, :] *= env_size

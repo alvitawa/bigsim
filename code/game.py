@@ -16,6 +16,8 @@ from sklearn.exceptions import ConvergenceWarning
 import data
 from data import Simulation
 
+import config
+
 OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
@@ -89,7 +91,7 @@ def init_globals(sim):
 
     # Clustering / flock detection
     global CLUSTERING_METHOD
-    CLUSTERING_METHOD = "LARS_CLUSTERING"
+    CLUSTERING_METHOD = config.CLUSTERING_METHOD
 
     # LARS_CLUSTERING not compatible with sharks
     if (len(sim.sharks) and CLUSTERING_METHOD=="LARS_CLUSTERING"):
@@ -412,7 +414,11 @@ def draw_population(screen):
         else:
             rotation = -np.arccos(shark[1][0])
 
-        draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 40, 40)
+        if np.where(simulation.sharks==shark)[0][0] in simulation.recently_ate:
+            draw_shark(screen, shark[0] * scaling, rotation, (169, 20, 1), 40, 40, 'eatin') 
+            simulation.recently_ate.remove(np.where(simulation.sharks==shark)[0][0]) 
+        else:
+            draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 40, 40)
 
     return True
 
@@ -446,21 +452,37 @@ def draw_fish(surface, position, rotation, color=BOID_COLOR, length=30, width=15
 
     pygame.draw.polygon(surface, color, positions, width=0)
 
-def draw_shark(surface, position, rotation, color, length, width):
-    head_up_down = np.array(
-        [[1.2 * length - length / 1.2, -0.1 * width],
-        [0.7 * length - length / 1.2, 0 * width],
-        [1.2 * length - length / 1.2, 0.1 * width],
-        [0.6 * length - length / 1.2, 0.35 * width],
-        [0.45 * length - length / 1.2, 0.6 * width],
-        [0.4 * length - length / 1.2, 0.35 * width],
-        [-0.25 * length - length / 1.2, 0.1 * width],
-        [-0.4 * length - length / 1.2, 0.5 * width],
-        [-0.5 * length - length / 1.2, -0.5 * width],
-        [-0.25 * length - length / 1.2, -0.1 * width],
-        [0.5 * length - length / 1.2, -0.2 * width]
-        ]
-    )
+def draw_shark(surface, position, rotation, color, length, width, eatin = 'not_eatin'):
+    if eatin == 'not_eatin':
+        head_up_down = np.array(
+            [[1.2 * length - length / 1.2, -0.1 * width],
+            [0.7 * length - length / 1.2, 0 * width],
+            [1.2 * length - length / 1.2, 0.1 * width],
+            [0.6 * length - length / 1.2, 0.35 * width],
+            [0.45 * length - length / 1.2, 0.6 * width],
+            [0.4 * length - length / 1.2, 0.35 * width],
+            [-0.25 * length - length / 1.2, 0.1 * width],
+            [-0.4 * length - length / 1.2, 0.5 * width],
+            [-0.5 * length - length / 1.2, -0.5 * width],
+            [-0.25 * length - length / 1.2, -0.1 * width],
+            [0.5 * length - length / 1.2, -0.2 * width]
+            ]
+        )
+    else:
+        head_up_down = np.array(
+            [
+            [0.6 * length   - length / 1.2, -0.2 * width],
+            [1.3 * length     - length / 1.2, 0. * width],
+            [0.5 * length   - length / 1.2, 0.35 * width],
+            [0.375 * length - length / 1.2, 0.6 * width],
+            [0.33 * length  - length / 1.2, 0.35 * width],
+            [-0.21 * length - length / 1.2, 0.1 * width],
+            [-0.33 * length - length / 1.2, 0.5 * width],
+            [-0.42 * length - length / 1.2, -0.5 * width],
+            [-0.21 * length - length / 1.2, -0.1 * width],
+            [0.42 * length  - length / 1.2, -0.2 * width]
+            ]
+        )
 
     c, s = np.cos(rotation), np.sin(rotation)
     R = np.array(((c, -s), (s, c)))

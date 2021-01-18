@@ -104,6 +104,9 @@ def init_globals(sim):
     else: # DEFAULT
         init_gmm()
 
+    global gekke_shark_count
+    gekke_shark_count =  [0] * simulation.sharks.shape[0]
+
 def change_clustering():
     pass
 
@@ -352,7 +355,9 @@ def debug_draw(screen):
 
 
 om_de_zoveel = 100
+om_de_zoveel2 = 20
 draw_count = 120
+
 colors = None
 def draw_population(screen):
     global simulation, colors, draw_count, om_de_zoveel
@@ -366,6 +371,7 @@ def draw_population(screen):
     if draw_count >= om_de_zoveel:
         draw_count = 0
         colors = positions_to_colors(positions)
+
 
     for boid, boid_color in zip(simulation.population, colors):
         # xness = location[0] / pygame.display.get_window_size()[0]
@@ -411,14 +417,21 @@ def draw_population(screen):
             rotation = np.arccos(shark[1][0])
         else:
             rotation = -np.arccos(shark[1][0])
-
-        if np.where(simulation.sharks==shark)[0][0] in simulation.recently_ate:
+        indx = np.where(simulation.sharks==shark)[0][0]
+        
+        if indx in simulation.recently_ate:
+            gekke_shark_count[indx] += 1
             draw_shark(screen, shark[0] * scaling, rotation, (169, 20, 1), 40, 40, 'eatin') 
-            simulation.recently_ate.remove(np.where(simulation.sharks==shark)[0][0]) 
+            if gekke_shark_count[indx] >= om_de_zoveel2:
+                simulation.recently_ate.remove(indx) 
+                gekke_shark_count[indx] = 0
+
         else:
             draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 40, 40)
 
+
     return True
+    
 
 
 def update_screen():
@@ -466,11 +479,26 @@ def draw_shark(surface, position, rotation, color, length, width, eatin = 'not_e
             [0.5 * length - length / 1.2, -0.2 * width]
             ]
         )
-    else:
+    elif eatin == 'eatin':
+        head_up_down = np.array(
+            [[1.2 * length - length / 1.2, -0.3 * width],
+            [0.7 * length - length / 1.2, 0 * width],
+            [1.2 * length - length / 1.2, 0.3 * width],
+            [0.6 * length - length / 1.2, 0.35 * width],
+            [0.45 * length - length / 1.2, 0.6 * width],
+            [0.4 * length - length / 1.2, 0.35 * width],
+            [-0.25 * length - length / 1.2, 0.1 * width],
+            [-0.4 * length - length / 1.2, 0.5 * width],
+            [-0.5 * length - length / 1.2, -0.5 * width],
+            [-0.25 * length - length / 1.2, -0.1 * width],
+            [0.5 * length - length / 1.2, -0.2 * width]
+            ]
+        )
+    elif eatin == 'far_away':
         head_up_down = np.array(
             [
-            [0.6 * length   - length / 1.2, -0.2 * width],
-            [1.3 * length     - length / 1.2, 0. * width],
+            [.5 * length   - length / 1.2, -0.2 * width],
+            [1.2 * length     - length / 1.2, 0. * width],
             [0.5 * length   - length / 1.2, 0.35 * width],
             [0.375 * length - length / 1.2, 0.6 * width],
             [0.33 * length  - length / 1.2, 0.35 * width],
@@ -481,6 +509,7 @@ def draw_shark(surface, position, rotation, color, length, width, eatin = 'not_e
             [0.42 * length  - length / 1.2, -0.2 * width]
             ]
         )
+
 
     c, s = np.cos(rotation), np.sin(rotation)
     R = np.array(((c, -s), (s, c)))

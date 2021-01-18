@@ -133,7 +133,9 @@ class Simulation:
         self.box_sight_radius = box_sight_radius
         self.grid_size = np.array(grid_size)
         self.multithreaded = multithreaded
+
         self.selected_index = None
+        self.leaders = []
 
         x_boxes = int(np.ceil(self.pars.shape[0] / self.grid_size[0]))
         y_boxes = int(np.ceil(self.pars.shape[1] / self.grid_size[1]))
@@ -229,6 +231,14 @@ class Simulation:
             else:
                 self.selected_index -= sum(indexes < self.selected_index)
 
+        if self.leaders != []:
+            for i in range(len(self.leaders)):
+                if self.leaders[i] in indexes:
+                    self.leaders[i] = None
+                else:
+                    self.leaders[i] -= sum(indexes < self.leaders[i])
+                
+
         return alive_fish
 
     def move_sharks(self, sharks, fish, obstacles, pars: Parameters):
@@ -248,15 +258,23 @@ class Simulation:
         distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
         
         # TODO: DIFFERENT PARAMETERS for SHARKS
-        fish_weights = stats.norm.pdf(distances / (pars.cohesion_range*2))  if (pars.cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
-        center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
+        # fish_weights = stats.norm.pdf(distances / (pars.cohesion_range*2))  if (pars.cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
+        # center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
 
         # Todo: we could also add obstacle avoidance etc.
+
+        # Closest fish
+        closest_id = np.argmin(distances, axis=0)
+        positions = fish[:, 0]
+        clos_pos = positions[closest_id]
+        
+        # Vector to closest fish
+        chase = clos_pos - sharks[:, 0, :]
 
         # --- Combine vectors ---
 
         # Normalize directions and weigh them
-        chase = np.nan_to_num(center_off_mass * pars.cohesion_weight)
+        # chase = np.nan_to_num(center_off_mass * pars.cohesion_weight)
 
         # Combine them to make the steering direction
         vectors = np.array([chase, seperation])

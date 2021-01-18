@@ -1,5 +1,6 @@
 from boid import *
 from data import *
+from game import *
 
 import pdb
 import sys
@@ -53,7 +54,11 @@ def simulation_loop(simulation, screen, clock, fps):
             draw_buttons()
 
             # Fps counter
-            draw_number(screen, int(clock.get_fps()))
+            draw_number(screen, int(clock.get_fps()), (0,0), np.abs(np.array(OCEAN_COLOR)-255))
+
+            # Population counter
+            draw_number(screen, simulation.population.shape[0], (0.9*WIDTH, 0), np.abs(np.array(OCEAN_COLOR)-200))
+            
 
             # Flip buffers
             update_screen()
@@ -121,7 +126,6 @@ def pars():
     return simulation.pars
 
 if __name__ == "__main__":
-    from game import *
 
     size = 10
 

@@ -8,6 +8,7 @@ import math
 
 from sklearn.mixture import GaussianMixture
 from sklearn.cluster import DBSCAN
+from LarsClusteringMethods import LarsClustering
 
 import warnings
 from sklearn.exceptions import ConvergenceWarning
@@ -36,21 +37,12 @@ SLIDABLE_PARAMETERS = [
     ("shark_agility",       1),
 ]
 
-def init_globals(sim):
-    global simulation
-
-    simulation = sim
-
+def init_gmm():
     global GM
     global K
-
     global COLORS
-    global MENU
-    MENU = False
 
     K = 5
-
-    # Init K different colors
     COLORS = np.random.choice(range(256), size=3*K).reshape(K, 3)
 
     GM = GaussianMixture(n_components=K, 
@@ -59,10 +51,55 @@ def init_globals(sim):
                     init_params='random',
                     verbose=0)
 
-    # No convergence warnings
+    # # No convergence warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=ConvergenceWarning)
         GM.fit(np.random.rand(K, 2))
+    pass
+
+def init_dbscan():
+    global COLORS
+
+    n_colors = 15
+    COLORS = np.random.choice(range(256), size=3*n_colors).reshape(n_colors, 3)
+    pass
+
+def init_lc():
+    global GM
+    global COLORS
+    global simulation
+
+    n_colors = 15
+    COLORS = np.random.choice(range(256), size=3*n_colors).reshape(n_colors, 3)
+    GM = LarsClustering(simulation.population)
+    pass
+
+def init_globals(sim):
+    global simulation
+
+    simulation = sim
+
+    global GM
+
+    # Init K different colors
+
+    # Flags
+    global MENU
+    MENU = False
+
+    # Clustering / flock detection
+    global CLUSTERING_METHOD
+    CLUSTERING_METHOD = "GMM"
+
+    if CLUSTERING_METHOD == "GMM":
+        init_gmm()
+    elif CLUSTERING_METHOD == "DBSCAN":
+        init_dbscan()
+    elif CLUSTERING_METHOD == "LARS_CLUSTERING":
+        init_lc()
+    else: # DEFAULT
+        init_gmm()
+
 
 
 # Set up pygame
@@ -194,38 +231,70 @@ def draw_buttons():
         elif (MENU):
             button.draw()
             
-def draw_number(screen, number):
+def draw_number(screen, number, location, color):
     '''Displays a fps number on the screen'''
     font = pygame.font.SysFont('arial', 50)
-    text = font.render(str(number), True, np.abs(np.array(OCEAN_COLOR)-255))
-    screen.blit(text, (0,0))
+    text = font.render(str(number), True, color)
+    screen.blit(text, location)
     # pygame.display.update()
 
-def positions_to_colors(positions):
-    global GM
-    global K
+def cluster_GMM(positions):
     global COLORS
 
+    global GM
+    global K
+
     # New GMM based on GMM of last iteration
-    # GM = GaussianMixture(n_components=K, 
-    #                     max_iter=10, 
-    #                     tol=1e-4,
-    #                     means_init=GM.means_,
-    #                     weights_init=GM.weights_,
-    #                     verbose=0)
-    
+    GM = GaussianMixture(n_components=K, 
+                        max_iter=10, 
+                        tol=1e-4,
+                        means_init=GM.means_,
+                        weights_init=GM.weights_,
+                        verbose=0)
+
     # No convergence warnings
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=ConvergenceWarning)
-        # GM.fit(positions)
-        clustering = DBSCAN(eps=3, min_samples=2).fit(positions)
+        GM.fit(positions)
 
-    # probs = GM.predict_proba(positions)
-    probs = clustering.labels_
-    return COLORS[probs]
+    probs = GM.predict_proba(positions)
 
     # Convert probabilities to colors
     return np.sum(probs[:,:,None]*COLORS[None,:,:], axis=1).astype(int)
+
+def cluster_DBSCAN(positions):
+    global COLORS
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=ConvergenceWarning)
+        clustering = DBSCAN(eps=3, min_samples=2).fit(positions)
+        
+    probs = clustering.labels_
+    return COLORS[probs]
+
+def cluster_LC(positions):
+    global COLORS
+
+    assignments = GM.fit(positions)
+    return COLORS[assignments]
+
+def positions_to_colors(positions):
+
+    if CLUSTERING_METHOD == "GMM":
+        labels = cluster_GMM(positions)
+    elif CLUSTERING_METHOD == "DBSCAN":
+        labels = cluster_DBSCAN(positions)
+    elif CLUSTERING_METHOD == "LARS_CLUSTERING":
+        labels = cluster_LC(positions)
+    else: # DEFAULT
+        labels = cluster_GMM(positions)
+
+    return labels
+    
+
+
+
+
 
 def debug_draw(screen):
     global simulation

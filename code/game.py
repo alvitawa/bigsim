@@ -13,8 +13,6 @@ from LarsClusteringMethods import LarsClustering
 import warnings
 from sklearn.exceptions import ConvergenceWarning
 
-import data
-from data import Simulation
 
 import config
 
@@ -200,9 +198,9 @@ def check_input():
                 mindin = np.min(distances)
 
                 if mindin < 1:
-                    data.selected_index = np.argmin(distances)
+                    simulation.selected_index = np.argmin(distances)
                 else:
-                    data.selected_index = None
+                    simulation.selected_index = None
 
             if event.button == 2: # middle click place obstacle
                 pos = np.array(pygame.mouse.get_pos())
@@ -307,9 +305,9 @@ def positions_to_colors(positions):
 def debug_draw(screen):
     global simulation
     
-    if data.selected_index == None:
+    if simulation.selected_index == None:
         return
-    selected_fish = simulation.population[data.selected_index]
+    selected_fish = simulation.population[simulation.selected_index]
     scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
 
     location = selected_fish[0] * scaling

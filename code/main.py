@@ -1,5 +1,5 @@
 from boid import *
-from data import *
+from simulation import *
 from game import *
 
 import pdb

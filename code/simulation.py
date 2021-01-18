@@ -18,29 +18,12 @@ from functools import partial
 from dataclasses import dataclass
 from dataclasses_json import config, DataClassJsonMixin, dataclass_json
 
-selected_index = None
 
 def find_eaten_fish(distances):
     loca = np.where(distances<0.2)
     indx_fish = loca[0]
     indx_shark = loca[1]
     return np.unique(indx_fish), np.unique(indx_shark)
-
-
-def delete_fish(population, indexes):
-    # dead_fish = population[indexes]
-    alive_fish = np.delete(population, indexes, 0)
-    # delete
-
-    # updated selected fish
-    global selected_index
-    if selected_index != None:
-        if selected_index in indexes:
-            selected_index = None
-        else:
-            selected_index -= sum(indexes < selected_index)
-
-    return alive_fish
 
 
 @dataclass_json
@@ -150,6 +133,7 @@ class Simulation:
         self.box_sight_radius = box_sight_radius
         self.grid_size = np.array(grid_size)
         self.multithreaded = multithreaded
+        self.selected_index = None
 
         x_boxes = int(np.ceil(self.pars.shape[0] / self.grid_size[0]))
         y_boxes = int(np.ceil(self.pars.shape[1] / self.grid_size[1]))
@@ -222,7 +206,7 @@ class Simulation:
             # self.sharks[:, 0, 0] %= self.pars.shape[0]
             # self.sharks[:, 0, 1] %= self.pars.shape[1]
 
-            self.population = delete_fish(self.population, eaten_fish_indexes)
+            self.population = self.delete_fish(self.population, eaten_fish_indexes)
 
             # solid walls
             self.population[:, 0, 0] = np.clip(self.population[:, 0, 0], 0, self.pars.shape[0])
@@ -231,6 +215,21 @@ class Simulation:
             self.sharks[:, 0, 0] = np.clip(self.sharks[:, 0, 0], 0, self.pars.shape[0])
             self.sharks[:, 0, 1] = np.clip(self.sharks[:, 0, 1], 0, self.pars.shape[1])
 
+
+    def delete_fish(self, population, indexes):
+        # dead_fish = population[indexes]
+        alive_fish = np.delete(population, indexes, 0)
+        # delete
+
+        # updated selected fish
+        
+        if self.selected_index != None:
+            if self.selected_index in indexes:
+                self.selected_index = None
+            else:
+                self.selected_index -= sum(indexes < self.selected_index)
+
+        return alive_fish
 
     def move_sharks(self, sharks, fish, obstacles, pars: Parameters):
 

@@ -400,8 +400,19 @@ def draw_population(screen):
         else:
             rotation = -np.arccos(shark[1][0])
 
-        draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 40, 40)
+        if np.where(simulation.sharks==shark)[0][0] in simulation.recently_ate:
+            draw_shark(screen, shark[0] * scaling, rotation, (169, 20, 1), 40, 40) 
+            simulation.recently_ate.remove(np.where(simulation.sharks==shark)[0][0]) 
+        else:
+            draw_shark(screen, shark[0] * scaling, rotation, (192,192,192), 40, 40)
 
+    # print(simulation.sharks.shape[0])
+    # print(simulation.sharks)
+    # for i in range(simulation.sharks.shape[0]):
+    #     if i in simulation.recently_ate:
+    #         draw_shark(screen, simulation.sharks[i][0] * scaling, rotation, (169, 20, 1), 40, 40)  
+    #     else:
+    #         draw_shark(screen, simulation.sharks[i][0] * scaling, rotation, (192,192,192), 40, 40)
     return True
 
 

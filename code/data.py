@@ -280,7 +280,7 @@ def fish_move_vectors(fish, neighbours, obstacles, sharks, pars: Parameters):
 
     # Weigh directions
     cohesion = np.nan_to_num(center_off_mass * pars.cohesion_weight)
-    separation = np.nan_to_num(move_away_target) * pars.separation_weight * (1 + pars.separation_weight*np.linalg.norm(cohesion, axis=1)[:, None])
+    separation = np.nan_to_num(move_away_target) * pars.separation_weight #* (1 + pars.separation_weight*np.linalg.norm(cohesion, axis=1)[:, None])
     alignment = np.nan_to_num(target_alignment * pars.alignment_weight)
 
     obstacle = np.nan_to_num(obstacle_target * pars.obstacle_weight)
@@ -295,7 +295,7 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
     """
     
     # This array will be updated with the new positions for the inner fish
-    # fish = np.copy(fish, order='C')
+    fish = np.copy(fish, order='C')
 
     # --- Get vectors ---
     vectors = fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
@@ -333,6 +333,8 @@ def move_fish(fish, neighbours, obstacles, sharks, pars: Parameters):
 
 
 def move_sharks(sharks, fish, obstacles, pars: Parameters):
+    sharks = np.copy(sharks, order='C')
+
     # Shark seperation
     neighbours_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
     sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
@@ -360,31 +362,26 @@ def move_sharks(sharks, fish, obstacles, pars: Parameters):
     # Combine them to make the steering direction
     vectors = np.array([chase, seperation])
 
-    steer_direction = sum(list(vectors))  # this would be nicer with np.sum(some_axis)
-    steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
-
-
-
+    steer_direction = sum(list(vectors)).view(np.complex128)  # this would be nicer with np.sum(some_axis)
 
     # print("Steer: ", steer_normed.shape)
 
     # Combine current direction and steering direction
-    updated_shark = np.copy(sharks)
+    
+    old_direction = sharks.view(np.complex128)[:, 1]
+    delta = (steer_direction / old_direction)**(pars.shark_agility)
 
-    new_direction = sharks[:, 1, :] + steer_normed * pars.shark_agility
-    # print("New Dir: ", new_direction.shape)
-    updated_shark[:, 1, :] = (
-        new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
-    )
+    new_direction = old_direction * delta
+    new_direction /= np.abs(new_direction)
 
-    # move da fish
-    updated_shark[:, 0, :] += updated_shark[:, 1, :] * pars.shark_speed
+    sharks[:, 1, :] = new_direction.view(np.float64)
 
+    sharks[:, 0, :] += sharks[:, 1, :] * pars.shark_speed
 
     # Eating
     eaten_fish_indexes = find_eaten_fish(distances)
 
-    return updated_shark, eaten_fish_indexes
+    return sharks, eaten_fish_indexes
 
 
 

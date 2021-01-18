@@ -21,7 +21,7 @@ BOID_COLOR = (219, 126, 67) # (0, 0, 0)
 
 SLIDABLE_PARAMETERS = [
 #   Name                    Max Value
-    ("speed",               1),
+    ("speed",               0.4),
     ("agility",             1),
     ("separation_weight",   200),
     ("separation_range",    3),
@@ -33,7 +33,7 @@ SLIDABLE_PARAMETERS = [
     ("obstacle_range",      3),
     ("shark_weight",        200),
     ("shark_range",         3),
-    ("shark_speed",         1),
+    ("shark_speed",         0.4),
     ("shark_agility",       1),
 ]
 
@@ -355,7 +355,7 @@ def debug_draw(screen):
 
 
 om_de_zoveel = 100
-om_de_zoveel2 = 20
+om_de_zoveel2 = 2
 draw_count = 120
 
 colors = None
@@ -494,7 +494,8 @@ def draw_shark(surface, position, rotation, color, length, width, eatin = 'not_e
             [0.5 * length - length / 1.2, -0.2 * width]
             ]
         )
-    elif eatin == 'far_away':
+    # elif eatin == 'far_away':
+    else:
         head_up_down = np.array(
             [
             [.5 * length   - length / 1.2, -0.2 * width],

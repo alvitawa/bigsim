@@ -16,6 +16,8 @@ from sklearn.exceptions import ConvergenceWarning
 import data
 from data import Simulation
 
+import config
+
 OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
@@ -89,7 +91,7 @@ def init_globals(sim):
 
     # Clustering / flock detection
     global CLUSTERING_METHOD
-    CLUSTERING_METHOD = "LARS_CLUSTERING"
+    CLUSTERING_METHOD = config.CLUSTERING_METHOD
 
     # LARS_CLUSTERING not compatible with sharks
     if (len(sim.sharks) and CLUSTERING_METHOD=="LARS_CLUSTERING"):

@@ -102,6 +102,15 @@ def generate_obstacles(n, env_size):
 
     return obstacles
 
+def stable_norm(array):
+    """
+    Makes it 0 if norm is 0
+    """
+    norms = 1 / np.linalg.norm(array, axis=1)[:, None]
+    norms = np.nan_to_num(norms)
+
+    normed = array * norms
+    return normed
 
 class Simulation:
     """
@@ -330,9 +339,10 @@ class Simulation:
         # We could also do like turn away from the direction of the shark
 
         # Weigh directions
-        cohesion = np.nan_to_num(center_off_mass * pars.cohesion_weight)
+        cohesion = stable_norm(center_off_mass) * pars.cohesion_weight
+        alignment = stable_norm(target_alignment) * pars.alignment_weight
+
         separation = np.nan_to_num(move_away_target) * pars.separation_weight #* (1 + pars.separation_weight*np.linalg.norm(cohesion, axis=1)[:, None])
-        alignment = np.nan_to_num(target_alignment * pars.alignment_weight)
 
         obstacle = np.nan_to_num(obstacle_target * pars.obstacle_weight)
         wall = np.nan_to_num(wall_target * pars.wall_weight)

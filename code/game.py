@@ -23,15 +23,15 @@ SLIDABLE_PARAMETERS = [
 #   Name                    Max Value
     ("speed",               1),
     ("agility",             1),
-    ("separation_weight",   15),
+    ("separation_weight",   200),
     ("separation_range",    3),
-    ("cohesion_weight",     15),
+    ("cohesion_weight",     1),
     ("cohesion_range",      3),
-    ("alignment_weight",    15),
+    ("alignment_weight",    1),
     ("alignment_range",     3),
-    ("obstacle_weight",     15),
+    ("obstacle_weight",     200),
     ("obstacle_range",      3),
-    ("shark_weight",        15),
+    ("shark_weight",        200),
     ("shark_range",         3),
     ("shark_speed",         1),
     ("shark_agility",       1),
@@ -197,7 +197,7 @@ def check_input():
 
                 mindin = np.min(distances)
 
-                if mindin < 1:
+                if mindin < 0.5:
                     simulation.selected_index = np.argmin(distances)
                 else:
                     simulation.selected_index = None

@@ -1,5 +1,5 @@
 from boid import *
-from data import *
+from simulation import *
 from game import *
 from ipython_help import *
 

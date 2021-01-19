@@ -1,6 +1,7 @@
 from boid import *
 from simulation import *
 from game import *
+from config import *
 from ipython_help import *
 
 import time
@@ -9,21 +10,8 @@ import pickle
 import json
 import threading
 
-import configparser
-
 # Parameters
 fps = 30
-
-config = configparser.ConfigParser()
-config.read("config.ini")
-
-# Maybe parse the config more nice than this, by setting the types and then referring to just cfg["WIDTH"] weetjewel
-cfg = config["DEFAULT"]
-HEADLESS = cfg.getboolean("headless")
-
-# Processing of parameters
-GRID_SIZE = cfg.getfloat("env_size") ** 2 / cfg.getfloat("grid_count")
-BOX_SIGHT = np.ceil(cfg.getfloat("max_fish_range") / GRID_SIZE)
 
 def run_until_dead(simulation):
     # Init pygame

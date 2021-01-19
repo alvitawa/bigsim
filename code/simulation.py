@@ -4,7 +4,6 @@ from typing import Any, Callable
 from dataclasses import field
 
 from numpy.lib.function_base import select
-from boid import Boid
 import json
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,6 +16,9 @@ from functools import partial
 
 from dataclasses import dataclass
 from dataclasses_json import config, DataClassJsonMixin, dataclass_json
+
+from config import CLUSTERING_METHOD
+import cluster
 
 
 def find_eaten_fish(distances):
@@ -89,9 +91,10 @@ class Statistics:
     boid_count = []
     global_alignment = []
     global_cohesion = []
+    cluster_method = CLUSTERING_METHOD
 
     def measure(self, sim):
-        self.boid_count.append()
+        self.boid_count.append(0)
         self.iterations += 1
 
 def generate_population(n, env_size):
@@ -168,6 +171,11 @@ class Simulation:
         # make obstacles
         self.obstacles = generate_obstacles(0, self.pars.shape)
 
+        
+        self.clusterer = cluster.get_clusterer(self, self.stats.cluster_method)
+
+        self.labels = -np.ones(self.population.shape[0], dtype=int)
+
     def load(self, f=None):
         if f == None:
             f = self.default_save
@@ -236,8 +244,10 @@ class Simulation:
             self.sharks[:, 0, 1] = np.clip(self.sharks[:, 0, 1], 0, self.pars.shape[1])
         
         if self.stats.iterations % self.stats.resolution != 0:
-            self.stats.iterations += 1
-            return
+            self.labels = self.clusterer.fit(self)
+            self.stats.measure(self)
+
+        self.stats.iterations += 1
 
     def get_leaders(self):
         return self.leaders

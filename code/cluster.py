@@ -123,7 +123,12 @@ def positions_to_colors(simulation):
         labels = cluster_GMM(simulation.population[:, 0])
 
     return labels
-    
+
+def get_clusterer(simulation, method):
+    if method == "LARS_CLUSTERING":
+        return LarsClustering(simulation.population)
+    else:
+        raise Exception("Other clustering methods not implemented.")
 
 def points_around(some_points, all_points, threshold):
     close_id = np.any(np.linalg.norm(all_points[:, None, :] - some_points[None, :, :],
@@ -181,7 +186,7 @@ class LarsClustering:
     def fit(self, sim):
         positions = sim.population[:, 0]
 
-        self.cluster_assignment = np.array([-1]*len(positions))
+        self.cluster_assignment = -np.ones(len(positions), dtype=int)
         current_cluster = 0
 
         # Set the leader variable

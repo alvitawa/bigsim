@@ -16,6 +16,9 @@ import config
 OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
 
+N_COLORS = 100
+COLORS = np.random.choice(range(256), size=3*N_COLORS).reshape(N_COLORS, 3)
+
 SLIDABLE_PARAMETERS = [
 #   Name                    Max Value
     ("speed",               0.4),
@@ -254,13 +257,7 @@ def draw_population(screen):
     # Coloring with GMM
     # positions = simulation.population[:,0,:]
 
-    draw_count += 1
-    if draw_count >= om_de_zoveel:
-        draw_count = 0
-        colors = positions_to_colors(simulation)
-
-
-    for boid, boid_color in zip(simulation.population, colors):
+    for boid, label in zip(simulation.population, simulation.labels):
         # xness = location[0] / pygame.display.get_window_size()[0]
         # if math.isnan(xness):
         #     xness = 0
@@ -283,7 +280,8 @@ def draw_population(screen):
         else:
             rotation = -np.arccos(boid[1][0])
 
-        draw_fish(screen, boid[0] * scaling, rotation, boid_color, 7, 4)
+        color = COLORS[label % N_COLORS]
+        draw_fish(screen, boid[0] * scaling, rotation, color, 7, 4)
 
         # print(boid[1][0])
 

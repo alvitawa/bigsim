@@ -97,30 +97,30 @@ def cluster_DBSCAN(positions):
     probs = clustering.labels_
     return COLORS[probs]
 
-def cluster_LC(positions):
+def cluster_LC(simulation):
     global COLORS
 
-    assignments = GM.fit(positions)
+    assignments = GM.fit(simulation)
     return COLORS[assignments]
 
 def get_method(simulation):
-    if (len(simulation.sharks) and CLUSTERING_METHOD=="LARS_CLUSTERING"):
-        return "GMM"
-    else: 
-        return CLUSTERING_METHOD
+    # if (len(simulation.sharks) and CLUSTERING_METHOD=="LARS_CLUSTERING"):
+    #     return "GMM"
+    # else: 
+    return CLUSTERING_METHOD
 
 
-def positions_to_colors(positions):
+def positions_to_colors(simulation):
     global method
 
     if method == "GMM":
-        labels = cluster_GMM(positions)
+        labels = cluster_GMM(simulation.population[:, 0])
     elif method == "DBSCAN":
-        labels = cluster_DBSCAN(positions)
+        labels = cluster_DBSCAN(simulation.population[:, 0])
     elif method == "LARS_CLUSTERING":
-        labels = cluster_LC(positions)
+        labels = cluster_LC(simulation)
     else: # DEFAULT
-        labels = cluster_GMM(positions)
+        labels = cluster_GMM(simulation.population[:, 0])
 
     return labels
     
@@ -142,77 +142,83 @@ class LarsClustering:
     def __init__(self, data, threshold=0.4, init_points=None):
         
         # LEADERS IS AN ARRAY OF INDICES
-        if init_points:
-            self.leaders = init_points
-        else:
-            self.leaders = [np.random.randint(0, len(data))]
+        # if init_points:
+        #     self.leaders = init_points
+        # else:
+        #     self.leaders = [np.random.randint(0, len(data))]
+        self.leader = []
             
         self.threshold=threshold
+        self.cluster_assignment = []
         self.clusters = []
         self.current_leader_index = 0
+        self.max_clusters = 15
     
     def leader_to_flock(self, leader, data):
         flock = points_around(leader, data, threshold=self.threshold)
         return flock
+    
+    def random_leader(self):
+        return np.where(self.cluster_assignment==-1)[0][0]
         
-    def get_next_leader(self, remaining, data):
+    def get_next_leader(self):
         """
         remaining: remaining fish
         data: all fish
 
         return: index of next leader in data
         """
-        # Get leader from saved leaders
-        if self.current_leader_index < len(self.leaders):
-            leader_id = self.leaders[self.current_leader_index]
-            self.current_leader_index += 1
-            
-            # if leader in the remaining data
-            # while not data[leader_id] in remaining:
-            #     self.leaders.remove(leader_id)
-            #     leader_id = self.leaders[self.current_leader_index]
-            
-            return leader_id
         
-        # Make new leader
-        else:
-            new_leader = remaining[np.random.randint(0, len(remaining))]
-            
-            # To index
-            leader_id = np.where(data == new_leader)[0][0]
-            
-            self.leaders.append(leader_id)
-            self.current_leader_index += 1
-            
-            return leader_id
+        # First yield leader in leaders list of simulation
+        for leader in self.leaders:
+            if leader:
+                yield leader
+
+        # Make new leaders
+        while True:
+            yield self.random_leader()
         
-    def fit(self, data):
-        
-        cluster_assignment = np.array([-1]*len(data))
+    def fit(self, sim):
+        positions = sim.population[:, 0]
+
+        self.cluster_assignment = np.array([-1]*len(positions))
         current_cluster = 0
+
+        # Set the leader variable
+        self.leaders = sim.get_leaders()
+        new_leaders = []
+
+        # Current leaders
+        leaders = self.get_next_leader()
             
-        while (-1 in cluster_assignment):
+        while (-1 in self.cluster_assignment):
             
             # Get unassigned points
-            remaining = data[cluster_assignment == -1]
+            remaining = positions[self.cluster_assignment == -1]
             
             # Get a leader
-            leader_id = self.get_next_leader(remaining, data)
-            leader = data[leader_id]
+            leader_id = next(leaders)
+            # Check if the leader does not yet have a flock
+            if self.cluster_assignment[leader_id] != -1:
+                continue
+
+            new_leaders.append(leader_id)
+            leader_position = positions[leader_id]
             
             # Find the flock of this leader
-            flock = self.leader_to_flock(np.array([leader]), data)
-            flock_points = data[flock]
+            flock = self.leader_to_flock(np.array([leader_position]), positions)
             
             # Update assignments
-            cluster_assignment[flock] = current_cluster
+            self.cluster_assignment[flock] = current_cluster
             current_cluster += 1
             
-            if current_cluster == 15:
+            # Break with max clusters
+            if current_cluster == self.max_clusters:
                 break
             
         # RESET
         self.current_leader_index = 0
+        sim.update_leaders(new_leaders)
         
-        return cluster_assignment
+        return self.cluster_assignment
     

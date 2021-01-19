@@ -239,6 +239,12 @@ class Simulation:
             self.stats.iterations += 1
             return
 
+    def get_leaders(self):
+        return self.leaders
+
+    def update_leaders(self, new_leaders):
+        self.leaders = new_leaders
+        return
 
     def delete_fish(self, population, indexes):
         # dead_fish = population[indexes]
@@ -254,10 +260,11 @@ class Simulation:
 
         if self.leaders != []:
             for i in range(len(self.leaders)):
-                if self.leaders[i] in indexes:
-                    self.leaders[i] = None
-                else:
-                    self.leaders[i] -= sum(indexes < self.leaders[i])
+                if self.leaders[i]:
+                    if self.leaders[i] in indexes:
+                        self.leaders[i] = None
+                    else:
+                        self.leaders[i] -= sum(indexes < self.leaders[i])
                 
 
         return alive_fish

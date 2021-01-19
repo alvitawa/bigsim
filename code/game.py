@@ -252,12 +252,12 @@ def draw_population(screen):
     scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
 
     # Coloring with GMM
-    positions = simulation.population[:,0,:]
+    # positions = simulation.population[:,0,:]
 
     draw_count += 1
     if draw_count >= om_de_zoveel:
         draw_count = 0
-        colors = positions_to_colors(positions)
+        colors = positions_to_colors(simulation)
 
 
     for boid, boid_color in zip(simulation.population, colors):

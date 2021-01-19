@@ -215,19 +215,21 @@ class Simulation:
     def save_stats(self, f):
         self.stats.save(f)
 
-    def log(self, f=None):
-        path = "logs/" + str(time.time())
-        os.mkdir(path)
+    def log(self, path=None, index=None):
+        if path == None:
+            path = "logs/" + str(time.time())
+            os.mkdir(path)
 
         self.save_pars(path + "/pars.json")
-        self.save_stats(path + "/stats.json")
+        indexstr = index if index is not None else ""
+        self.save_stats(f"{path}/stats{indexstr}.json")
 
 
     def iterate(self, pool, n=1):
         for _ in range(n):
             if self.population.shape[0] == 0:
                 return False
-                
+
             grid_coordinates = self.population[:, 0, :] // self.grid_size
 
             results = []

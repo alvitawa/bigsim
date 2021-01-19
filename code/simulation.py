@@ -91,10 +91,6 @@ class Statistics:
     global_cohesion = []
 
     def measure(self, sim):
-        if self.iterations % self.resolution != 0:
-            self.iterations += 1
-            return
-
         self.boid_count.append()
         self.iterations += 1
 
@@ -186,69 +182,6 @@ class Simulation:
             return json.dump(self.pars.to_dict(), file, indent=4, sort_keys=True)
 
 
-    def move_sharks(self, sharks, fish, obstacles, pars: Parameters):
-    # Shark seperation
-        neighbours_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
-        sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
-
-        seperation_weights = distance_to_weights(sqr_distances, pars.separation_range_shark)
-        move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
-
-        seperation = np.nan_to_num(move_away_target * pars.separation_weight_shark)
-
-        # Chase: move to weighted center of mass of fish
-        fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
-        distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
-        
-        # TODO: DIFFERENT PARAMETERS for SHARKS
-        fish_weights = stats.norm.pdf(distances / (pars.cohesion_range*2))  if (pars.cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
-        center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
-
-        # Todo: we could also add obstacle avoidance etc.
-
-        # --- Combine vectors ---
-
-        # Normalize directions and weigh them
-        chase = np.nan_to_num(center_off_mass * pars.cohesion_weight)
-
-        # Combine them to make the steering direction
-        vectors = np.array([chase, seperation])
-
-        steer_direction = sum(list(vectors))  # this would be nicer with np.sum(some_axis)
-        steer_normed = steer_direction / np.linalg.norm(steer_direction, axis=1)[:, None]
-
-
-
-
-        # print("Steer: ", steer_normed.shape)
-
-        # Combine current direction and steering direction
-        updated_shark = np.copy(sharks)
-
-        new_direction = sharks[:, 1, :] + steer_normed * pars.shark_agility
-        # print("New Dir: ", new_direction.shape)
-        updated_shark[:, 1, :] = (
-            new_direction / np.linalg.norm(new_direction, axis=1)[:, None]
-        )
-
-        # move da fish
-        updated_shark[:, 0, :] += updated_shark[:, 1, :] * pars.shark_speed
-
-
-        # Eating
-        eaten_fish_indexes = find_eaten_fish(distances)[0]
-        eating_sharks = find_eaten_fish(distances)[1]
-        
-        if len(eating_sharks)<2 and eating_sharks not in self.recently_ate:
-            self.recently_ate = self.recently_ate + list(eating_sharks)
-
-        far_sharks = far_away_sharks(distances)
-
-        return updated_shark, eaten_fish_indexes
-        # with Pool(processes=4) as pool:
-        #     results = pool.map(task, parameters)
-
-
     def iterate(self, pool, n=1):
         for _ in range(n):
             grid_coordinates = self.population[:, 0, :] // self.grid_size
@@ -301,6 +234,10 @@ class Simulation:
 
             self.sharks[:, 0, 0] = np.clip(self.sharks[:, 0, 0], 0, self.pars.shape[0])
             self.sharks[:, 0, 1] = np.clip(self.sharks[:, 0, 1], 0, self.pars.shape[1])
+        
+        if self.stats.iterations % self.stats.resolution != 0:
+            self.stats.iterations += 1
+            return
 
 
     def delete_fish(self, population, indexes):

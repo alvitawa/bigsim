@@ -4,9 +4,11 @@ from typing import Any, Callable
 from dataclasses import field
 
 from numpy.lib.function_base import select
+import os
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 from scipy import stats
 
 # Gekke optimalizatie
@@ -81,21 +83,42 @@ class Parameters:
 
 @dataclass_json
 @dataclass
-class Statistics:
+class Statistics():
     """Number of iterations executed"""
-    iterations = 0
+    iterations: int = 0
     """Number of frames (simulation iterations) between measurements"""
-    resolution = 20
-    school_count = []
-    school_sizes = []
-    boid_count = []
-    global_alignment = []
-    global_cohesion = []
-    cluster_method = CLUSTERING_METHOD
+    resolution: int = 100
+    boid_count: list = field(default_factory=lambda: [])
+    school_count: list = field(default_factory=lambda: [])
+    school_sizes: list = field(default_factory=lambda: [])
+    cluster_method: str = CLUSTERING_METHOD
 
     def measure(self, sim):
-        self.boid_count.append(0)
+        self.boid_count.append(int(sim.population.shape[0]))
+        clusters = np.unique(sim.labels)
+        self.school_count.append(int(clusters.shape[0]))
+        school_sizes = np.equal(sim.labels[:, None], clusters[None, :]).sum(axis=0)
+        school_sizes.sort()
+        self.school_sizes.append(list(int(s) for s in school_sizes[::-1]))
         self.iterations += 1
+
+    def schools(self):
+        sc = np.array(self.school_count)
+        schools = np.zeros(sc.shape + (sc.max(),))
+        for i, ss in enumerate(self.school_sizes):
+            schools[i, :len(ss)] = ss
+        return schools
+
+    def save(self, f):
+        with open(f, "w") as file:
+            return json.dump(self.to_dict(), file)
+
+    
+    def __getitem__(self, index):
+        return getattr(self, index)
+
+    def __setitem__(self, index, value):
+        setattr(self, index, value)
 
 def generate_population(n, env_size):
     population = np.random.rand(n, 2, 2)
@@ -105,7 +128,6 @@ def generate_population(n, env_size):
     population[:, 1, :] /= np.linalg.norm(population[:, 1, :], axis=1)[:, None]
 
     return population
-
 
 def generate_obstacles(n, env_size):
     obstacles = np.random.rand(n, 1, 2)
@@ -137,18 +159,19 @@ class Simulation:
         multithreaded=True,
         default_save="saved_parameters.json",
     ):
-        # Save simulation parameters
         self.recently_ate = []
         self.default_save = default_save
+
         self.pars = pars
-        self.stats = stats
         if self.pars == None:
             try:
-                self.load()
+                self.load_pars()
             except Exception as e:
                 print("Couldn't load parameters.")
                 print(e)
                 self.pars = Parameters()
+
+        self.stats = stats
         # Algo settings
         self.box_sight_radius = box_sight_radius
         self.grid_size = np.array(grid_size)
@@ -176,22 +199,35 @@ class Simulation:
 
         self.labels = -np.ones(self.population.shape[0], dtype=int)
 
-    def load(self, f=None):
+    def load_pars(self, f=None):
         if f == None:
             f = self.default_save
         with open(f, "r") as file:
             self.pars = Parameters.from_json(file.read())
             return self.pars
 
-    def save(self, f=None):
+    def save_pars(self, f=None):
         if f == None:
             f = self.default_save
         with open(f, "w") as file:
             return json.dump(self.pars.to_dict(), file, indent=4, sort_keys=True)
 
+    def save_stats(self, f):
+        self.stats.save(f)
+
+    def log(self, f=None):
+        path = "logs/" + str(time.time())
+        os.mkdir(path)
+
+        self.save_pars(path + "/pars.json")
+        self.save_stats(path + "/stats.json")
+
 
     def iterate(self, pool, n=1):
         for _ in range(n):
+            if self.population.shape[0] == 0:
+                return False
+                
             grid_coordinates = self.population[:, 0, :] // self.grid_size
 
             results = []
@@ -248,6 +284,8 @@ class Simulation:
             self.stats.measure(self)
 
         self.stats.iterations += 1
+
+        return True
 
     def get_leaders(self):
         return self.leaders

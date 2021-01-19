@@ -105,11 +105,11 @@ def exit_pygame():
 
 def save():
     global simulation
-    simulation.save()
+    simulation.save_pars()
 
 def load():
     global simulation
-    pars = simulation.load()
+    pars = simulation.load_pars()
     for (par, _), slider in zip(SLIDABLE_PARAMETERS, sliders):
         slider.set_value(pars[par])
 

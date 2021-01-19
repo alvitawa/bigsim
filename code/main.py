@@ -59,7 +59,7 @@ def simulation_loop(simulation, screen, clock, fps):
             render_time += toc - tic
 
             tic = time.perf_counter()  # Computation
-            simulation.iterate(pool, 1)
+            quit = not simulation.iterate(pool, 1) or quit
             toc = time.perf_counter()
 
             computation_time += toc - tic
@@ -76,6 +76,9 @@ def simulation_loop(simulation, screen, clock, fps):
     big_toc = time.perf_counter()
 
     diff = big_toc - big_tic
+
+    simulation.log()
+    print("Logged simulation statistics.")
 
     print(
         f"Rendered {iterations} iterations in {render_time:0.4f} seconds ({render_time/diff*100:0.1f}%). {iterations/render_time:0.4f} iterations/sec"
@@ -148,14 +151,6 @@ if __name__ == "__main__":
         simulation_loop(simulation, screen, clock, fps)
     else:
         filterwarnings('ignore')
-
-        def lp():
-            global simulation
-            return simulation.load()
-
-        def wp():
-            global simulation
-            return simulation.save()
 
         start()
         embed()

@@ -81,6 +81,7 @@ def simulation_loop(simulation, screen, clock, fps):
     
     end = time.time()
     duration = np.array(end)- np.array(start)
+    simulation.stats.duration = duration
 
     simulation.log()
     print("Logged simulation statistics.")

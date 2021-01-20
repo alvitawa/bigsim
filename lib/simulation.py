@@ -99,7 +99,7 @@ class Statistics():
     """Number of iterations executed"""
     iterations: int = 0
     """Number of frames (simulation iterations) between measurements"""
-    resolution: int = 100
+    resolution: int = 40
     boid_count: list = field(default_factory=lambda: [])
     school_count: list = field(default_factory=lambda: [])
     school_sizes: list = field(default_factory=lambda: [])
@@ -219,10 +219,10 @@ class Simulation:
 
         # make sharks
         self.sharks = generate_population(self.pars.shark_count, self.pars.shape)
+        self.shark_state = np.zeros(self.pars.shark_count)
 
         # make obstacles
         self.obstacles = generate_obstacles(0, self.pars.shape)
-
         
         self.clusterer = get_clusterer(self, self.stats.cluster_method)
 
@@ -244,7 +244,9 @@ class Simulation:
 
     def log(self, path=None, index=0):
         if path == None:
-            path = "logs/" + str(time.time())
+            if not os.path.isdir("./logs/"):
+                os.mkdir("./logs")
+            path = "./logs/" + str(time.time())
 
         os.mkdir(path)
 
@@ -347,56 +349,75 @@ class Simulation:
         return alive_fish
 
     def move_sharks(self, sharks, fish, obstacles, pars: Parameters):
+        # sharks = np.copy(sharks, order='C') # Who put this here? What is this
 
-        sharks = np.copy(sharks, order='C')
-    
-        neighbours_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
-        sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
+        # TODO: Move this to parameters
+        SHARK_WONDER_SPEED = 0.045
+        SHARK_CHARGE_SPEED = 0.055
+        SHARK_EATEN_SPEED = 0.015
 
-        seperation_weights = distance_to_weights(sqr_distances, pars.shark_separation_range)
-        move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
+        SHARK_CHASE_RANGE = 0.5
+
+        SHARK_CHASE_DURATION = 30
+        SHARK_COOLDOWN_DURATION = 20
+
+        SHARK_TOP_ZOVEEL = 10
+
+        # Prep
+        sharks_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
+        shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
+
+        fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
+        fish_distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
+
+        # Get shark vectors
+        # Seperation
+        seperation_weights = distance_to_weights(shark_distances, pars.shark_separation_range)
+        move_away_target = -1 * (sharks_rel * seperation_weights[:, :, None]).sum(axis=0)
 
         seperation = np.nan_to_num(move_away_target * pars.shark_separation_weight)
 
-        # Chase: move to weighted center of mass of fish
-        fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
-        distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
-        
-        # TODO: DIFFERENT PARAMETERS for SHARKS
-        fish_weights = stats.norm.pdf(distances / (pars.shark_cohesion_range*2))  if (pars.shark_cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
-        center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
+        # Center of mass of TOP X FISH
+        fish_weights = stats.norm.pdf(fish_distances / (pars.shark_cohesion_range*2))  if (pars.shark_cohesion_range != 0) else np.zeros_like(fish_distances)
+        mass = (fish_rel * fish_weights[:, :, None])
 
-        # Todo: we could also add obstacle avoidance etc.
+        ranking = np.argsort(fish_distances, axis=0)
+        # Ignore far away fish to avoid it balancing
+        mass[ranking >= SHARK_TOP_ZOVEEL] = [0, 0]
+        center_off_mass = mass.sum(axis=0)
 
-        # Closest fish
-        closest_id = np.argmin(distances, axis=0)
+        chase_school = np.nan_to_num(center_off_mass * pars.cohesion_weight)
+
+        # Update Shark State
+        # ( positive = charging, zero = wonder, negative = cooldown)
+        self.shark_state[self.shark_state > 0] -= 1
+        self.shark_state[self.shark_state == 1] = -SHARK_COOLDOWN_DURATION
+        self.shark_state[self.shark_state < 0] += 1
+
+        closest_fish_distances = np.min(fish_distances, axis=0)
+
+        sharks_to_start_charging = np.logical_and((self.shark_state == 0), (closest_fish_distances < SHARK_CHASE_RANGE))
+        self.shark_state[sharks_to_start_charging] = SHARK_CHASE_DURATION
+
+
+        # Closest Fish
+        closest_id = np.argmin(fish_distances, axis=0)
         positions = fish[:, 0]
         clos_pos = positions[closest_id]
         
         # Vector to closest fish
         chase_close = clos_pos - sharks[:, 0, :] 
 
-        # --- Combine vectors ---
+        # normally chase schools and seperate, but charge closest fish when charging
+        # vectors = np.array(sum([chase_school, seperation])) This is how we first did it but that comes out wack
+        vectors = np.array(sum([chase_close, seperation]))
 
-        # Normalize directions and weigh them
-        chase_school = np.nan_to_num(center_off_mass * pars.cohesion_weight)
-
-        random_threshold = 0.4
-        we_go_to_close_fish_or_no = (np.min(distances, axis=0) < random_threshold).astype(int)
-        # print(chase_close)
-        # print(chase_school)
-        # print(we_go_to_close_fish_or_no)
-        chase = chase_close * we_go_to_close_fish_or_no.reshape(len(sharks), 1) + np.abs(we_go_to_close_fish_or_no-1).reshape(len(sharks), 1) * chase_school
-
-        # Combine them to make the steering direction
-        vectors = np.array([chase, seperation])
-
-        steer_direction = sum(list(vectors)).view(np.complex128)  # this would be nicer with np.sum(some_axis)
-
-        # print("Steer: ", steer_normed.shape)
+        vectors[self.shark_state > 0] = chase_close[self.shark_state > 0]
 
         # Combine current direction and steering direction
-        
+
+        steer_direction = vectors.view(np.complex128)
+
         old_direction = sharks.view(np.complex128)[:, 1]
         delta = (steer_direction / old_direction)**(pars.shark_agility)
 
@@ -405,18 +426,92 @@ class Simulation:
 
         sharks[:, 1, :] = new_direction.view(np.float64)
 
-        sharks[:, 0, :] += sharks[:, 1, :] * pars.shark_speed
+        SHARK_WONDER_SPEED = 0.025
+        SHARK_CHARGE_SPEED = 0.075
+        SHARK_EATEN_SPEED = 0.015
 
+        update = np.zeros_like(sharks[:, 1, :])
+
+        update[(self.shark_state == 0)] = sharks[(self.shark_state == 0)][:, 1, :] * SHARK_WONDER_SPEED
+        update[(self.shark_state > 0)] = sharks[(self.shark_state > 0)][:, 1, :] * SHARK_CHARGE_SPEED
+        update[(self.shark_state < 0)] = sharks[(self.shark_state < 0)][:, 1, :] * SHARK_EATEN_SPEED
+
+        sharks[:, 0, :] += update
 
         # Eating
-        eaten_fish_indexes = find_eaten_fish(distances)[0]
-        eating_sharks = find_eaten_fish(distances)[1]
-        self.recently_ate = self.recently_ate + list(eating_sharks)
-        
+        eaten_fish_indexes, eating_sharks = find_eaten_fish(fish_distances)
+        self.shark_state[eating_sharks] = -SHARK_COOLDOWN_DURATION
 
         return sharks, eaten_fish_indexes
-        # with Pool(processes=4) as pool:
-        #     results = pool.map(task, parameters)
+
+
+    # def move_sharks(self, sharks, fish, obstacles, pars: Parameters):
+    #     sharks = np.copy(sharks, order='C')
+    
+    #     neighbours_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
+    #     sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
+
+    #     seperation_weights = distance_to_weights(sqr_distances, pars.shark_separation_range)
+    #     move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
+
+    #     seperation = np.nan_to_num(move_away_target * pars.shark_separation_weight)
+
+    #     # Chase: move to weighted center of mass of fish
+    #     fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
+    #     distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
+        
+    #     # TODO: DIFFERENT PARAMETERS for SHARKS
+    #     fish_weights = stats.norm.pdf(distances / (pars.shark_cohesion_range*2))  if (pars.shark_cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
+    #     center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
+
+    #     # Todo: we could also add obstacle avoidance etc.
+
+    #     # Closest fish
+    #     closest_id = np.argmin(distances, axis=0)
+    #     positions = fish[:, 0]
+    #     clos_pos = positions[closest_id]
+        
+    #     # Vector to closest fish
+    #     chase_close = clos_pos - sharks[:, 0, :] 
+
+    #     # --- Combine vectors ---
+
+    #     # Normalize directions and weigh them
+    #     chase_school = np.nan_to_num(center_off_mass * pars.cohesion_weight)
+
+    #     random_threshold = 0.4
+    #     we_go_to_close_fish_or_no = (np.min(distances, axis=0) < random_threshold).astype(int)
+    #     # print(chase_close)
+    #     # print(chase_school)
+    #     # print(we_go_to_close_fish_or_no)
+    #     chase = chase_close * we_go_to_close_fish_or_no.reshape(len(sharks), 1) + np.abs(we_go_to_close_fish_or_no-1).reshape(len(sharks), 1) * chase_school
+
+    #     # Combine them to make the steering direction
+    #     vectors = np.array([chase, seperation])
+
+    #     steer_direction = sum(list(vectors)).view(np.complex128)  # this would be nicer with np.sum(some_axis)
+
+    #     # Combine current direction and steering direction
+        
+    #     old_direction = sharks.view(np.complex128)[:, 1]
+    #     delta = (steer_direction / old_direction)**(pars.shark_agility)
+
+    #     new_direction = old_direction * delta
+    #     new_direction /= np.abs(new_direction)
+
+    #     sharks[:, 1, :] = new_direction.view(np.float64)
+
+    #     sharks[:, 0, :] += sharks[:, 1, :] * pars.shark_speed
+
+
+    #     # Eating
+    #     eaten_fish_indexes = find_eaten_fish(distances)[0]
+    #     eating_sharks = find_eaten_fish(distances)[1]
+    #     self.recently_ate = self.recently_ate + list(eating_sharks)
+
+    #     return sharks, eaten_fish_indexes
+    #     # with Pool(processes=4) as pool:
+    #     #     results = pool.map(task, parameters)
 
         
     def fish_move_vectors(self, fish, neighbours, obstacles, sharks, pars: Parameters):

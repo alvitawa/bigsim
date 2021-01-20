@@ -12,7 +12,7 @@ import json
 import threading
 
 # Parameters
-fps = 30
+fps = 20
 user_exit = False
 
 def run_until_max_steps(simulation):

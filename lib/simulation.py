@@ -66,8 +66,11 @@ class Parameters:
     shark_weight: float = 1.8
     shark_range: float = 0.7
 
-    separation_range_shark: float = 1
-    separation_weight_shark: float = 15
+    shark_cohesion_range: float = 1.0
+    shark_cohesion_weight: float = 0.05
+
+    shark_separation_range: float = 1
+    shark_separation_weight: float = 15
 
     shark_speed: float = 0.05
     shark_agility: float = 0.09
@@ -101,6 +104,7 @@ class Statistics():
     school_count: list = field(default_factory=lambda: [])
     school_sizes: list = field(default_factory=lambda: [])
     cluster_method: str = CLUSTERING_METHOD
+    duration: float = 0
 
     def measure(self, sim):
         self.boid_count.append(int(sim.population.shape[0]))
@@ -178,7 +182,6 @@ class Simulation:
     def __init__(
         self,
         pars=None,
-        stats=Statistics(),
         grid_size=(1.0, 1.0),
         box_sight_radius=2,
         multithreaded=True,
@@ -196,7 +199,8 @@ class Simulation:
                 print(e)
                 self.pars = Parameters()
 
-        self.stats = stats
+        self.stats = Statistics()
+
         # Algo settings
         self.box_sight_radius = box_sight_radius
         self.grid_size = np.array(grid_size)
@@ -304,7 +308,7 @@ class Simulation:
             self.sharks[:, 0, 0] = np.clip(self.sharks[:, 0, 0], 0, self.pars.shape[0])
             self.sharks[:, 0, 1] = np.clip(self.sharks[:, 0, 1], 0, self.pars.shape[1])
         
-        if self.stats.iterations % self.stats.resolution != 0:
+        if self.stats.iterations % self.stats.resolution == 0:
             self.labels = self.clusterer.fit(self)
             self.stats.measure(self)
 
@@ -349,17 +353,17 @@ class Simulation:
         neighbours_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
         sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
 
-        seperation_weights = distance_to_weights(sqr_distances, pars.separation_range_shark)
+        seperation_weights = distance_to_weights(sqr_distances, pars.shark_separation_range)
         move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
 
-        seperation = np.nan_to_num(move_away_target * pars.separation_weight_shark)
+        seperation = np.nan_to_num(move_away_target * pars.shark_separation_weight)
 
         # Chase: move to weighted center of mass of fish
         fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]
         distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
         
         # TODO: DIFFERENT PARAMETERS for SHARKS
-        fish_weights = stats.norm.pdf(distances / (pars.cohesion_range*2))  if (pars.cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
+        fish_weights = stats.norm.pdf(distances / (pars.shark_cohesion_range*2))  if (pars.shark_cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
         center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
 
         # Todo: we could also add obstacle avoidance etc.
@@ -370,14 +374,14 @@ class Simulation:
         clos_pos = positions[closest_id]
         
         # Vector to closest fish
-        chase_close = clos_pos - sharks[:, 0, :]
+        chase_close = clos_pos - sharks[:, 0, :] 
 
         # --- Combine vectors ---
 
         # Normalize directions and weigh them
         chase_school = np.nan_to_num(center_off_mass * pars.cohesion_weight)
 
-        random_threshold = 0.1
+        random_threshold = 0.4
         we_go_to_close_fish_or_no = (np.min(distances, axis=0) < random_threshold).astype(int)
         # print(chase_close)
         # print(chase_school)

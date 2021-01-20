@@ -1,3 +1,5 @@
+from sys import argv
+from numpy.lib.scimath import arccos
 from boid import *
 from simulation import *
 from game import *
@@ -36,7 +38,9 @@ def run_until_dead(simulation):
     if not HEADLESS:
         exit_pygame()
 
-def run_single_simulation():
+    print("Dead.")
+
+def run_single_simulation(log_dir=None, index=None):
     # Init simulation
     simulation = Simulation(
         pars=None,
@@ -47,6 +51,8 @@ def run_single_simulation():
     )
 
     run_until_dead(simulation)
+
+    simulation.log(log_dir, index)
 
 def visualize(simulation, screen, clock):
     quit = check_input()
@@ -77,11 +83,17 @@ def simulate_step(simulation, pool):
     simulation.iterate(pool, 1)
 
 if __name__ == "__main__":
+    import sys
+    log_dir = sys.argv[1] if len(sys.argv) > 1 else None
+    n_sims = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+
     # Run Simulation
     if not cfg.getboolean("ipython"):
-        run_single_simulation()
+        for i in range(n_sims):
+            run_single_simulation(log_dir, i)
     else:
         thread = threading.Thread(
-            target=exception_catcher, args=(run_single_simulation)
+            target=exception_catcher, args=(run_single_simulation,)
         )
         thread.start()
+        embed()

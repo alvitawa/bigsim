@@ -218,7 +218,8 @@ class Simulation:
     def log(self, path=None, index=None):
         if path == None:
             path = "logs/" + str(time.time())
-            os.mkdir(path)
+
+        os.mkdir(path)
 
         self.save_pars(path + "/pars.json")
         indexstr = index if index is not None else ""

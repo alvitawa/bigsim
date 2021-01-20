@@ -42,7 +42,6 @@ def init_dbscan():
 def init_lc(population):
     global GM
     global COLORS
-    global simulation
 
     n_colors = 15
     COLORS = np.random.choice(range(256), size=3*n_colors).reshape(n_colors, 3)

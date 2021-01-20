@@ -326,17 +326,17 @@ class Simulation:
         return
 
     def delete_fish(self, population, indexes):
-        # dead_fish = population[indexes]
-        alive_fish = np.delete(population, indexes, 0)
         # delete
+        alive_fish = np.delete(population, indexes, 0)
+
         # updated selected fish
-        
         if self.selected_index != None:
             if self.selected_index in indexes:
                 self.selected_index = None
             else:
                 self.selected_index -= sum(indexes < self.selected_index)
 
+        # fix leaders
         if self.leaders != []:
             for i in range(len(self.leaders)):
                 if self.leaders[i]:
@@ -344,8 +344,10 @@ class Simulation:
                         self.leaders[i] = None
                     else:
                         self.leaders[i] -= sum(indexes < self.leaders[i])
-                
 
+        # fix labels
+        self.labels = np.delete(self.labels, indexes, 0)
+        
         return alive_fish
 
     def move_sharks(self, sharks, fish, obstacles, pars: Parameters):

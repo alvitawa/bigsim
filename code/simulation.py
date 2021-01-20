@@ -347,14 +347,14 @@ class Simulation:
         clos_pos = positions[closest_id]
         
         # Vector to closest fish
-        chase_close = clos_pos - sharks[:, 0, :]
+        chase_close = clos_pos - sharks[:, 0, :] 
 
         # --- Combine vectors ---
 
         # Normalize directions and weigh them
         chase_school = np.nan_to_num(center_off_mass * pars.cohesion_weight)
 
-        random_threshold = 0.1
+        random_threshold = 0.4
         we_go_to_close_fish_or_no = (np.min(distances, axis=0) < random_threshold).astype(int)
         # print(chase_close)
         # print(chase_school)

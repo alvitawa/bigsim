@@ -103,7 +103,6 @@ class Statistics():
         school_sizes = np.equal(sim.labels[:, None], clusters[None, :]).sum(axis=0)
         school_sizes.sort()
         self.school_sizes.append(list(int(s) for s in school_sizes[::-1]))
-        self.iterations += 1
 
     def schools(self):
         sc = np.array(self.school_count)
@@ -156,7 +155,6 @@ class Simulation:
     def __init__(
         self,
         pars=None,
-        stats=Statistics(),
         grid_size=(1.0, 1.0),
         box_sight_radius=2,
         multithreaded=True,
@@ -174,7 +172,8 @@ class Simulation:
                 print(e)
                 self.pars = Parameters()
 
-        self.stats = stats
+        self.stats = Statistics()
+
         # Algo settings
         self.box_sight_radius = box_sight_radius
         self.grid_size = np.array(grid_size)

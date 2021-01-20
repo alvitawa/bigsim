@@ -12,8 +12,9 @@ import threading
 
 # Parameters
 fps = 30
+user_exit = False
 
-def run_until_dead(simulation):
+def run_until_max_steps(simulation):
     # Init pygame
     screen, clock = None, None
     if not HEADLESS:
@@ -21,6 +22,7 @@ def run_until_dead(simulation):
 
     # Iterate until done
     with Pool(processes=cfg.getint("n_threads")) as pool:
+        global user_exit
         user_exit = False
         for i in range(cfg.getint("max_steps")):
             if not HEADLESS:
@@ -29,12 +31,36 @@ def run_until_dead(simulation):
                     break
 
             simulate_step(simulation, pool)
-            if len(simulation.population) == 0: # TODO: I think it crashes internally when this happens
+            if len(simulation.population) == 0:
                 break
 
-    # Exit pygame
-    if not HEADLESS:
-        exit_pygame()
+    return len(simulation.population)
+
+def run_test(cohesion_per_alignment):
+    # Init simulation
+    simulation = Simulation(
+        pars=None,
+        grid_size=(GRID_SIZE, GRID_SIZE),
+        box_sight_radius=BOX_SIGHT,
+        multithreaded=not cfg.getboolean("ipython"),
+        default_save=cfg.get("save")
+    )
+
+    total_weight = simulation.pars.alignment_weight + simulation.pars.cohesion_weight
+
+    simulation.pars.alignment_weight = (1 / (cohesion_per_alignment+1))
+    simulation.pars.cohesion_weight = (cohesion_per_alignment / (cohesion_per_alignment+1))
+
+    result = run_until_max_steps(simulation)
+
+def run_multiple_tests():
+    tests = [0.1, 1.0, 2.0] # TODO move to command line :P
+
+    for t in tests:
+        run_test(t)
+        if user_exit:
+            break
+
 
 def run_single_simulation():
     # Init simulation
@@ -46,7 +72,7 @@ def run_single_simulation():
         default_save=cfg.get("save")
     )
 
-    run_until_dead(simulation)
+    run_until_max_steps(simulation)
 
 def visualize(simulation, screen, clock):
     quit = check_input()
@@ -54,7 +80,7 @@ def visualize(simulation, screen, clock):
     clear_screen(screen)
     
     # draw population
-    debug_draw(screen)
+    debug_draw(screen, cfg.getint("max_steps"))
     draw_population(screen)
 
     # draw UI
@@ -79,7 +105,8 @@ def simulate_step(simulation, pool):
 if __name__ == "__main__":
     # Run Simulation
     if not cfg.getboolean("ipython"):
-        run_single_simulation()
+        run_multiple_tests()
+        exit_pygame()
     else:
         thread = threading.Thread(
             target=exception_catcher, args=(run_single_simulation)

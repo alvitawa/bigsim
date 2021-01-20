@@ -14,7 +14,10 @@ from cluster import *
 import config
 
 OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
-BOID_COLOR = (219, 126, 67) # (0, 0, 0) 
+BOID_COLOR = (219, 126, 67) # (0, 0, 0)
+PROGRESS_COLOR = (OCEAN_COLOR[0], OCEAN_COLOR[1], OCEAN_COLOR[2]+5)
+
+draw_progress = True
 
 N_COLORS = 100
 COLORS = np.random.choice(range(256), size=3*N_COLORS).reshape(N_COLORS, 3)
@@ -197,13 +200,19 @@ def draw_number(screen, number, location, color):
     screen.blit(text, location)
     # pygame.display.update()
 
-def debug_draw(screen):
+def debug_draw(screen, max_steps=1000000):
     global simulation
-    
+
+    window = pygame.display.get_window_size()
+
+    # draw progress
+    prog = simulation.stats.iterations / max_steps
+    pygame.draw.rect(screen, PROGRESS_COLOR, (0, 0, window[0], prog * window[1]))
+
     if simulation.selected_index == None:
         return
     selected_fish = simulation.population[simulation.selected_index]
-    scaling = np.array(pygame.display.get_window_size()) / simulation.pars.shape
+    scaling = np.array(window) / simulation.pars.shape
 
     location = selected_fish[0] * scaling
 

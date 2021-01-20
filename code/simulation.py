@@ -66,6 +66,9 @@ class Parameters:
     shark_weight: float = 1.8
     shark_range: float = 0.7
 
+    shark_cohesion_range: float = 1.0
+    shark_cohesion_weight: float = 0.05
+
     shark_separation_range: float = 1
     shark_separation_weight: float = 15
 
@@ -336,7 +339,7 @@ class Simulation:
         distances = np.sqrt(np.power(fish_rel, 2).sum(axis=-1))
         
         # TODO: DIFFERENT PARAMETERS for SHARKS
-        fish_weights = stats.norm.pdf(distances / (pars.cohesion_range*2))  if (pars.cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
+        fish_weights = stats.norm.pdf(distances / (pars.shark_cohesion_range*2))  if (pars.shark_cohesion_range != 0) else np.zeros_like(distances) # fuck it use cohesion weight for now
         center_off_mass = (fish_rel * fish_weights[:, :, None]).sum(axis=0)
 
         # Todo: we could also add obstacle avoidance etc.
@@ -347,14 +350,14 @@ class Simulation:
         clos_pos = positions[closest_id]
         
         # Vector to closest fish
-        chase_close = clos_pos - sharks[:, 0, :]
+        chase_close = clos_pos - sharks[:, 0, :] 
 
         # --- Combine vectors ---
 
         # Normalize directions and weigh them
         chase_school = np.nan_to_num(center_off_mass * pars.cohesion_weight)
 
-        random_threshold = 0.1
+        random_threshold = 0.4
         we_go_to_close_fish_or_no = (np.min(distances, axis=0) < random_threshold).astype(int)
         # print(chase_close)
         # print(chase_school)

@@ -198,9 +198,6 @@ class LarsClustering:
             
         while (-1 in self.cluster_assignment):
             
-            # Get unassigned points
-            remaining = positions[self.cluster_assignment == -1]
-            
             # Get a leader
             leader_id = next(leaders)
             # Check if the leader does not yet have a flock

@@ -19,8 +19,8 @@ from functools import partial
 from dataclasses import dataclass
 from dataclasses_json import config, DataClassJsonMixin, dataclass_json
 
-from config import CLUSTERING_METHOD
-import cluster
+from .config import CLUSTERING_METHOD
+from .cluster import get_clusterer
 
 
 def find_eaten_fish(distances):
@@ -72,6 +72,15 @@ class Parameters:
     shark_speed: float = 0.05
     shark_agility: float = 0.09
 
+    def load(f=None):
+        with open(f, "r") as file:
+            pars = Parameters.from_json(file.read())
+            return pars
+
+    def save(self, f=None):
+        with open(f, "w") as file:
+            return json.dump(self.to_dict(), file, indent=4, sort_keys=True)
+
     def __getitem__(self, index):
         return getattr(self, index)
 
@@ -100,7 +109,6 @@ class Statistics():
         school_sizes = np.equal(sim.labels[:, None], clusters[None, :]).sum(axis=0)
         school_sizes.sort()
         self.school_sizes.append(list(int(s) for s in school_sizes[::-1]))
-        self.iterations += 1
 
     def schools(self):
         sc = np.array(self.school_count)
@@ -113,12 +121,29 @@ class Statistics():
         with open(f, "w") as file:
             return json.dump(self.to_dict(), file)
 
+    def load(f):
+        with open(f, "r") as file:
+            stats = Parameters.from_json(file.read())
+            return stats
     
     def __getitem__(self, index):
         return getattr(self, index)
 
     def __setitem__(self, index, value):
         setattr(self, index, value)
+
+def load_logs(path):
+    pars = Parameters.load(path + '/pars.json')
+    stats = []
+    try:
+        i = 0
+        while True:
+            indexstr = str(i)
+            stats.append(Statistics.load(f"{path}/stats{indexstr}.json"))
+            i += 1
+    except:
+        pass
+    return (pars, stats)
 
 def generate_population(n, env_size):
     population = np.random.rand(n, 2, 2)
@@ -195,35 +220,32 @@ class Simulation:
         self.obstacles = generate_obstacles(0, self.pars.shape)
 
         
-        self.clusterer = cluster.get_clusterer(self, self.stats.cluster_method)
+        self.clusterer = get_clusterer(self, self.stats.cluster_method)
 
         self.labels = -np.ones(self.population.shape[0], dtype=int)
 
     def load_pars(self, f=None):
         if f == None:
             f = self.default_save
-        with open(f, "r") as file:
-            self.pars = Parameters.from_json(file.read())
-            return self.pars
+        self.pars = Parameters.load(f)
+        return self.pars
 
     def save_pars(self, f=None):
         if f == None:
             f = self.default_save
-        with open(f, "w") as file:
-            return json.dump(self.pars.to_dict(), file, indent=4, sort_keys=True)
+        self.pars.save(f)
 
     def save_stats(self, f):
         self.stats.save(f)
 
-    def log(self, path=None, index=None):
+    def log(self, path=None, index=0):
         if path == None:
             path = "logs/" + str(time.time())
 
         os.mkdir(path)
 
         self.save_pars(path + "/pars.json")
-        indexstr = index if index is not None else ""
-        self.save_stats(f"{path}/stats{indexstr}.json")
+        self.save_stats(f"{path}/stats{index}.json")
 
 
     def iterate(self, pool, n=1):

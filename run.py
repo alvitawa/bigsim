@@ -1,10 +1,9 @@
 from sys import argv
 from numpy.lib.scimath import arccos
-from boid import *
-from simulation import *
-from game import *
-from config import *
-from ipython_help import *
+from lib.simulation import *
+from lib.game import *
+from lib.config import *
+from lib.ipython_help import *
 
 import time
 import timeit

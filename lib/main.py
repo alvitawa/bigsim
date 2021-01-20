@@ -1,6 +1,5 @@
-from boid import *
-from simulation import *
-from game import *
+from .simulation import *
+from .game import *
 
 import pdb
 import sys
@@ -14,7 +13,7 @@ from IPython import embed
 
 from warnings import filterwarnings
 
-from config import *
+from .config import *
 
 stop = False
 exc = None

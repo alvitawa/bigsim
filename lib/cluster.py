@@ -8,7 +8,7 @@ from sklearn.cluster import DBSCAN
 
 from sklearn.exceptions import ConvergenceWarning
 
-from config import CLUSTERING_METHOD
+from .config import CLUSTERING_METHOD
 
 global method
 

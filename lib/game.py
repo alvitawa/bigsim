@@ -2,16 +2,14 @@
 # Import and initialize the pygame library
 import pygame
 from pygame_widgets import Slider, TextBox, Button
-from sliders import LabeledSlider
+from .sliders import LabeledSlider
 import numpy as np
 import math
 
 
 
-from cluster import *
+from .cluster import *
 
-
-import config
 
 OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0) 

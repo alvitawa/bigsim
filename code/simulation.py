@@ -284,7 +284,7 @@ class Simulation:
             self.sharks[:, 0, 0] = np.clip(self.sharks[:, 0, 0], 0, self.pars.shape[0])
             self.sharks[:, 0, 1] = np.clip(self.sharks[:, 0, 1], 0, self.pars.shape[1])
         
-        if self.stats.iterations % self.stats.resolution != 0:
+        if self.stats.iterations % self.stats.resolution == 0:
             self.labels = self.clusterer.fit(self)
             self.stats.measure(self)
 

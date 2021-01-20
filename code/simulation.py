@@ -95,6 +95,7 @@ class Statistics():
     school_count: list = field(default_factory=lambda: [])
     school_sizes: list = field(default_factory=lambda: [])
     cluster_method: str = CLUSTERING_METHOD
+    duration: float = 0
 
     def measure(self, sim):
         self.boid_count.append(int(sim.population.shape[0]))

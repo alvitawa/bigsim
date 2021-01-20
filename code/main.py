@@ -21,6 +21,8 @@ exc = None
 threads = 6
 
 def simulation_loop(simulation, screen, clock, fps):
+    start = time.time()
+
     global stop
 
     iterations = 0
@@ -76,6 +78,10 @@ def simulation_loop(simulation, screen, clock, fps):
     big_toc = time.perf_counter()
 
     diff = big_toc - big_tic
+    
+    end = time.time()
+    duration = np.array(end)- np.array(start)
+    simulation.stats.duration = duration
 
     simulation.log()
     print("Logged simulation statistics.")
@@ -92,6 +98,7 @@ def simulation_loop(simulation, screen, clock, fps):
     print(
         f"{iterations_left}, {grid_size}, {threads}, {computation_time/iterations:0.4f}, {render_time/iterations:0.4f}"
     )
+    print("This simulation took ", duration, "seconds")
 
 
 def exception_catcher(f, *args, **kwargs):

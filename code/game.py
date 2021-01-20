@@ -33,6 +33,8 @@ SLIDABLE_PARAMETERS = [
     ("obstacle_range",      3),
     ("shark_weight",        200),
     ("shark_range",         3),
+    ("shark_separation_range", 3),
+    ("shark_separation_weight", 30),
     ("shark_speed",         0.4),
     ("shark_agility",       1),
 ]

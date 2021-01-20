@@ -66,8 +66,8 @@ class Parameters:
     shark_weight: float = 1.8
     shark_range: float = 0.7
 
-    separation_range_shark: float = 1
-    separation_weight_shark: float = 15
+    shark_separation_range: float = 1
+    shark_separation_weight: float = 15
 
     shark_speed: float = 0.05
     shark_agility: float = 0.09
@@ -326,10 +326,10 @@ class Simulation:
         neighbours_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
         sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
 
-        seperation_weights = distance_to_weights(sqr_distances, pars.separation_range_shark)
+        seperation_weights = distance_to_weights(sqr_distances, pars.shark_separation_range)
         move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(axis=0)
 
-        seperation = np.nan_to_num(move_away_target * pars.separation_weight_shark)
+        seperation = np.nan_to_num(move_away_target * pars.shark_separation_weight)
 
         # Chase: move to weighted center of mass of fish
         fish_rel = fish[:, None, 0, :] - sharks[:, 0, :]

@@ -4,3 +4,4 @@ code/.DS_STORE
 config.ini
 config.ini
 logs
+.ipynb_checkpoints

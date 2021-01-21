@@ -39,7 +39,7 @@ def run_until_max_steps(simulation):
 
     return len(simulation.population)
 
-def run_test(log_dir, t):
+def run_test(log_dir, t, cohesion_per_alignment):
     # Init simulation
     simulation = Simulation(
         pars=None,
@@ -49,10 +49,10 @@ def run_test(log_dir, t):
         default_save=cfg.get("save")
     )
 
-    # total_weight = simulation.pars.alignment_weight + simulation.pars.cohesion_weight
+    total_weight = simulation.pars.alignment_weight + simulation.pars.cohesion_weight
 
-    # simulation.pars.alignment_weight = (1 / (cohesion_per_alignment+1))
-    # simulation.pars.cohesion_weight = (cohesion_per_alignment / (cohesion_per_alignment+1))
+    simulation.pars.alignment_weight = (1 / (cohesion_per_alignment+1))
+    simulation.pars.cohesion_weight = (cohesion_per_alignment / (cohesion_per_alignment+1))
 
     result = run_until_max_steps(simulation)
 
@@ -60,11 +60,11 @@ def run_test(log_dir, t):
 
     return result
 
-def run_multiple_tests(log_dir, n_sims):
+def run_multiple_tests(log_dir, n_sims, ratio):
     # tests = [0.1, 1.0, 2.0] # TODO move to command line :P
 
     for t in range(n_sims):
-        run_test(log_dir, t)
+        run_test(log_dir, t, ratio)
         if user_exit:
             break
 
@@ -114,10 +114,11 @@ if __name__ == "__main__":
     import sys
     log_dir = sys.argv[1] if len(sys.argv) > 1 else None
     n_sims = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    ratio = float(sys.argv[3]) if len(sys.argv) > 3 else None
 
     # Run Simulation
     if not cfg.getboolean("ipython"):
-        run_multiple_tests(log_dir, n_sims)
+        run_multiple_tests(log_dir, n_sims, ratio)
         exit_pygame()
     else:
         thread = threading.Thread(

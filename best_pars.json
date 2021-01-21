@@ -1,4 +1,5 @@
 {
+    "max_steps": 10000,
     "agility": 0.2,
     "alignment_range": 0.8,
     "alignment_weight": 0.22,

@@ -1,138 +1,103 @@
-from sys import argv
-from numpy.lib.scimath import arccos
-from lib.simulation import *
-from lib.game import *
-from lib.config import *
-from lib.ipython_help import *
+"""
+    Script to run the simulations.
 
-import time
-import timeit
-import pickle
-import json
+    Usage: python3 [log directory] [number of simulations] [cohesion percentage]
+
+    Global configuration that does not affect the results of the simulatinos
+    can be found in the file `config.ini`
+
+    Parameters that do influence the simulation (number of boids, speed of sharks ...etc)
+    are found by default in the file `saved_parameters.json`
+    
+    The name of this file can be changed by editing `config.ini`
+
+    If [cohesion percentage] is supplied, the corresponding values from `save_parameters.json`
+    will be overwritten.
+
+"""
+from lib.simulation import *
+from lib.config import *
+
+import lib.game as game
+
 import threading
 
-# Parameters
-fps = 20
-user_exit = False
 
-def run_until_max_steps(simulation):
-    # Init pygame
-    screen, clock = None, None
-    if not HEADLESS:
-        screen, clock = init_pygame(resolution=[cfg.getint("width"), cfg.getint("height")], simulation=simulation, do_sliders=cfg.getboolean("sliders"))
+def run_test(log_dir=None, cohesion_percent=None):
+    """
+        Create, run and log a single simulation, visualizing it as configured in config.ini
 
-    # Iterate until done
-    with Pool(processes=cfg.getint("n_threads")) as pool:
-        global user_exit
-        user_exit = False
-        while True:
-            if not HEADLESS:
-                user_exit = visualize(simulation, screen, clock)
-                if user_exit:
-                    break
+        Returns True if the user exited the application (by closing the visualization)
+    """
 
-            # The simulation itself tracks the remaining iterations
-            # and returns zero if it is done
-            remaining = simulation.iterate(pool, 1)
-            if remaining == 0:
-                break
-
-    return len(simulation.population)
-
-def run_test(log_dir, t, cohesion_percent=None):
     # Init simulation
     simulation = Simulation(
         pars=None,
         grid_size=(GRID_SIZE, GRID_SIZE),
         box_sight_radius=BOX_SIGHT,
-        multithreaded=not cfg.getboolean("ipython"),
-        default_save=cfg.get("save")
+        n_threads=cfg.getint("n_threads"),
+        default_save=cfg.get("save"),
     )
 
     if cohesion_percent != None:
-        total_weight = simulation.pars.alignment_weight + simulation.pars.cohesion_weight
+        total_weight = (
+            simulation.pars.alignment_weight + simulation.pars.cohesion_weight
+        )
 
         simulation.pars.alignment_weight = (1 - cohesion_percent) * total_weight
         simulation.pars.cohesion_weight = (cohesion_percent) * total_weight
-        
-    result = run_until_max_steps(simulation)
 
-    simulation.log(log_dir, t)
+    # Initialize the visualization
+    if not HEADLESS:
+        # Note that the game module is stateful and behaves similarly to a class instance
+        game.init(
+            resolution=[cfg.getint("width"), cfg.getint("height")],
+            simulation=simulation,
+            enable_menu=cfg.getboolean("menu"),
+            enable_metrics=cfg.getboolean("metrics"),
+        )
 
-    return result
+    # Run the simulation, the callback keeps the visualization synchronized
+    simulation.run(callback=game.tick if not HEADLESS else lambda: False)
 
-def run_multiple_tests(log_dir, n_sims, ratio):
-    for t in range(n_sims):
-        high_score = -1
-        if (log_dir):
-            if os.path.isdir(log_dir):
-                for file in os.listdir(log_dir):
-                    parts = file.split(".")
+    if not HEADLESS:
+        # One last tick to render the final state of the simulation
+        game.tick()
 
-                    if parts[0][:5] == "stats":
-                        if int(parts[0][5:]) > high_score:
-                            high_score = int(parts[0][5:])
+    simulation.log(log_dir)
 
-        print("Working on: ", log_dir, "/stats", high_score + 1, ".json", sep="")
+    if not HEADLESS:
+        return game._stop
+    return False
 
-        run_test(log_dir, high_score + 1, ratio)
+
+def run_multiple_tests(log_dir=None, n_sims=1, ratio=None):
+    """
+        Run `n_sims` simulations. Save logs to `log_dir`.
+
+        If there are already logs in log_dir, this function will continue
+        appending more logs.
+    """
+    if log_dir is not None:
+        print("Working on: ", log_dir, f" ({n_sims} simulations)")
+
+    for _ in range(n_sims):
+        user_exit = run_test(log_dir, ratio)
+
         if user_exit:
             break
 
     print("Done!")
 
-def run_single_simulation(log_dir=None, index=None):
-    # Init simulation
-    simulation = Simulation(
-        pars=None,
-        grid_size=(GRID_SIZE, GRID_SIZE),
-        box_sight_radius=BOX_SIGHT,
-        multithreaded=not cfg.getboolean("ipython"),
-        default_save=cfg.get("save")
-    )
-
-    run_until_max_steps(simulation)
-
-    simulation.log(log_dir, index)
-
-def visualize(simulation, screen, clock):
-    quit = check_input()
-
-    clear_screen(screen)
-    
-    # draw population
-    debug_draw(screen, cfg.getint("max_steps"))
-    draw_population(screen)
-
-    # draw UI
-    draw_sliders()
-    draw_buttons()
-
-    # draw FPS counter
-    draw_number(screen, int(clock.get_fps()), (0,0), np.abs(np.array(OCEAN_COLOR)-255))
-
-    # draw Population counter
-    draw_number(screen, simulation.population.shape[0], (0.9*cfg.getint("width"), 0), np.abs(np.array(OCEAN_COLOR)-200))
-
-    update_screen()
-    
-    clock.tick(fps)
-
-    return quit
 
 if __name__ == "__main__":
     import sys
+
     log_dir = sys.argv[1] if len(sys.argv) > 1 else None
     n_sims = int(sys.argv[2]) if len(sys.argv) > 2 else 1
-    ratio = float(sys.argv[3]) if len(sys.argv) > 3 else None#
+    ratio = float(sys.argv[3]) if len(sys.argv) > 3 else None
 
-    # Run Simulation
-    if not cfg.getboolean("ipython"):
-        run_multiple_tests(log_dir, n_sims, ratio)
-        exit_pygame()
-    else:
-        thread = threading.Thread(
-            target=exception_catcher, args=(run_single_simulation,)
-        )
-        thread.start()
-        embed()
+    run_multiple_tests(log_dir, n_sims, ratio)
+
+    if not HEADLESS:
+        game.quit()

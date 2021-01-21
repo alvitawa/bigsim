@@ -39,7 +39,7 @@ def run_until_max_steps(simulation):
 
     return len(simulation.population)
 
-def run_test(log_dir, t, cohesion_per_alignment):
+def run_test(log_dir, t, cohesion_per_alignment=None):
     # Init simulation
     simulation = Simulation(
         pars=None,
@@ -49,10 +49,11 @@ def run_test(log_dir, t, cohesion_per_alignment):
         default_save=cfg.get("save")
     )
 
-    total_weight = simulation.pars.alignment_weight + simulation.pars.cohesion_weight
+    if cohesion_per_alignment != None:
+        total_weight = simulation.pars.alignment_weight + simulation.pars.cohesion_weight
 
-    simulation.pars.alignment_weight = (1 / (cohesion_per_alignment+1))
-    simulation.pars.cohesion_weight = (cohesion_per_alignment / (cohesion_per_alignment+1))
+        simulation.pars.alignment_weight = (1 / (cohesion_per_alignment+1))
+        simulation.pars.cohesion_weight = (cohesion_per_alignment / (cohesion_per_alignment+1))
 
     result = run_until_max_steps(simulation)
 
@@ -114,7 +115,7 @@ if __name__ == "__main__":
     import sys
     log_dir = sys.argv[1] if len(sys.argv) > 1 else None
     n_sims = int(sys.argv[2]) if len(sys.argv) > 2 else 1
-    ratio = float(sys.argv[3]) if len(sys.argv) > 3 else None
+    ratio = float(sys.argv[3]) if len(sys.argv) > 3 else None#
 
     # Run Simulation
     if not cfg.getboolean("ipython"):

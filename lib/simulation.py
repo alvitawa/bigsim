@@ -148,6 +148,13 @@ class Statistics():
     def __setitem__(self, index, value):
         setattr(self, index, value)
 
+def stats_to_numpy(stats: list, pars):
+    arrs = list(s.to_numpy(pars) for s in stats)
+    s = arrs[0][0]
+    parts = tuple(np.array(list(arr[i] for arr in arrs)) for i in range(1,4))
+    return (s,) + parts
+
+
 def load_logs(path):
     pars = Parameters.load(path + '/pars.json')
     stats = []

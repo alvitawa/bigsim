@@ -204,7 +204,7 @@ def debug_draw(screen, max_steps=1000000):
     window = pygame.display.get_window_size()
 
     # draw progress
-    prog = simulation.stats.iterations / max_steps
+    prog = simulation.stats.iterations / simulation.pars.max_steps
     pygame.draw.rect(screen, PROGRESS_COLOR, (0, 0, window[0], prog * window[1]))
 
     if simulation.selected_index == None:

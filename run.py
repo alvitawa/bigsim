@@ -39,7 +39,7 @@ def run_until_max_steps(simulation):
 
     return len(simulation.population)
 
-def run_test(log_dir, t, cohesion_per_alignment):
+def run_test(log_dir, t, cohesion_percent):
     # Init simulation
     simulation = Simulation(
         pars=None,
@@ -51,8 +51,8 @@ def run_test(log_dir, t, cohesion_per_alignment):
 
     total_weight = simulation.pars.alignment_weight + simulation.pars.cohesion_weight
 
-    simulation.pars.alignment_weight = (1 / (cohesion_per_alignment+1))
-    simulation.pars.cohesion_weight = (cohesion_per_alignment / (cohesion_per_alignment+1))
+    simulation.pars.alignment_weight = (1 - cohesion_percent) * total_weight
+    simulation.pars.cohesion_weight = (cohesion_percent) * total_weight
 
     result = run_until_max_steps(simulation)
 
@@ -61,15 +61,24 @@ def run_test(log_dir, t, cohesion_per_alignment):
     return result
 
 def run_multiple_tests(log_dir, n_sims, ratio):
-    # tests = [0.1, 1.0, 2.0] # TODO move to command line :P
-
     for t in range(n_sims):
-        run_test(log_dir, t, ratio)
+        high_score = -1
+        if (log_dir):
+            if os.path.isdir(log_dir):
+                for file in os.listdir(log_dir):
+                    parts = file.split(".")
+
+                    if parts[0][:5] == "stats":
+                        if int(parts[0][5:]) > high_score:
+                            high_score = int(parts[0][5:])
+
+        print("Working on: ", log_dir, "/stats", high_score + 1, ".json", sep="")
+
+        run_test(log_dir, high_score + 1, ratio)
         if user_exit:
             break
 
-
-    print("Dead.")
+    print("Done!")
 
 def run_single_simulation(log_dir=None, index=None):
     # Init simulation

@@ -1,5 +1,8 @@
 # Simple pygame program
 # Import and initialize the pygame library
+from os import environ
+environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+
 import pygame
 from pygame_widgets import Slider, TextBox, Button
 from .sliders import LabeledSlider

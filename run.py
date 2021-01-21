@@ -25,19 +25,21 @@ def run_until_max_steps(simulation):
     with Pool(processes=cfg.getint("n_threads")) as pool:
         global user_exit
         user_exit = False
-        for i in range(cfg.getint("max_steps")):
+        while True:
             if not HEADLESS:
                 user_exit = visualize(simulation, screen, clock)
                 if user_exit:
                     break
 
-            simulate_step(simulation, pool)
-            if len(simulation.population) == 0:
+            # The simulation itself tracks the remaining iterations
+            # and returns zero if it is done
+            remaining = simulation.iterate(pool, 1)
+            if remaining == 0:
                 break
 
     return len(simulation.population)
 
-def run_test(log_dir):
+def run_test(log_dir, t):
     # Init simulation
     simulation = Simulation(
         pars=None,
@@ -54,7 +56,7 @@ def run_test(log_dir):
 
     result = run_until_max_steps(simulation)
 
-    simulation.log(log_dir)
+    simulation.log(log_dir, t)
 
     return result
 
@@ -62,7 +64,7 @@ def run_multiple_tests(log_dir, n_sims):
     # tests = [0.1, 1.0, 2.0] # TODO move to command line :P
 
     for t in range(n_sims):
-        run_test(log_dir)
+        run_test(log_dir, t)
         if user_exit:
             break
 
@@ -107,9 +109,6 @@ def visualize(simulation, screen, clock):
     clock.tick(fps)
 
     return quit
-
-def simulate_step(simulation, pool):
-    simulation.iterate(pool, 1)
 
 if __name__ == "__main__":
     import sys

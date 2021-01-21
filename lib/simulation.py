@@ -37,9 +37,13 @@ def far_away_sharks(distances):
 @dataclass_json
 @dataclass
 class Parameters:
+    max_steps: int = 500
     shape: Any = (10, 7)
     boid_count: int = 300
     shark_count: int = 0
+    """Number of frames (simulation iterations) between measurements"""
+    resolution: int = 40
+    cluster_method: str = CLUSTERING_METHOD
 
     speed: float = 0.05
     agility: float = 0.2
@@ -98,12 +102,9 @@ class Parameters:
 class Statistics():
     """Number of iterations executed"""
     iterations: int = 0
-    """Number of frames (simulation iterations) between measurements"""
-    resolution: int = 40
-    boid_count: list = field(default_factory=lambda: [])
-    school_count: list = field(default_factory=lambda: [])
-    school_sizes: list = field(default_factory=lambda: [])
-    cluster_method: str = CLUSTERING_METHOD
+    boid_count: Any = field(default_factory=lambda: [])
+    school_count: Any = field(default_factory=lambda: [])
+    school_sizes: Any = field(default_factory=lambda: [])
     duration: float = 0
 
     def measure(self, sim):
@@ -114,20 +115,31 @@ class Statistics():
         school_sizes.sort()
         self.school_sizes.append(list(int(s) for s in school_sizes[::-1]))
 
-    def schools(self):
-        sc = np.array(self.school_count)
-        schools = np.zeros(sc.shape + (sc.max(),))
+    def to_numpy(self, pars):
+        max_measurements = pars.max_steps // pars.resolution + 1
+
+        # boid count array
+        boid_count = np.zeros(max_measurements)
+        boid_count[:len(self.boid_count)] = self.boid_count
+
+        # school count array
+        school_count = np.zeros(max_measurements, dtype=int)
+        school_count[:len(self.school_count)] = self.school_count
+
+        # school size matrix
+        school_sizes = np.zeros(school_count.shape + (school_count.max(),))
         for i, ss in enumerate(self.school_sizes):
-            schools[i, :len(ss)] = ss
-        return schools
+            school_sizes[i, :len(ss)] = ss
+
+        return max_measurements, boid_count, school_count, school_sizes
 
     def save(self, f):
         with open(f, "w") as file:
-            return json.dump(self.to_dict(), file)
+            return json.dump(self.to_dict(), file, separators=(',', ':'))
 
     def load(f):
         with open(f, "r") as file:
-            stats = Parameters.from_json(file.read())
+            stats = Statistics.from_json(file.read())
             return stats
     
     def __getitem__(self, index):
@@ -145,7 +157,7 @@ def load_logs(path):
             indexstr = str(i)
             stats.append(Statistics.load(f"{path}/stats{indexstr}.json"))
             i += 1
-    except:
+    except FileNotFoundError:
         pass
     return (pars, stats)
 
@@ -224,7 +236,7 @@ class Simulation:
         # make obstacles
         self.obstacles = generate_obstacles(0, self.pars.shape)
         
-        self.clusterer = get_clusterer(self, self.stats.cluster_method)
+        self.clusterer = get_clusterer(self, self.pars.cluster_method)
 
         self.labels = -np.ones(self.population.shape[0], dtype=int)
 
@@ -248,16 +260,22 @@ class Simulation:
                 os.mkdir("./logs")
             path = "./logs/" + str(time.time())
 
-        os.mkdir(path)
+        if not os.path.isdir(path):
+            os.mkdir(path)
 
         self.save_pars(path + "/pars.json")
         self.save_stats(f"{path}/stats{index}.json")
 
 
+    """ 
+        Returns the number of iterations remaining in the simulation before max_steps is reached, 
+        or zero if it has already reached max_steps or if the population is empty.
+    """
     def iterate(self, pool, n=1):
+        remaining = self.pars.max_steps - self.stats.iterations
         for _ in range(n):
-            if self.population.shape[0] == 0:
-                return False
+            if self.population.shape[0] == 0 or remaining <= 0:
+                return 0
 
             grid_coordinates = self.population[:, 0, :] // self.grid_size
 
@@ -310,13 +328,13 @@ class Simulation:
             self.sharks[:, 0, 0] = np.clip(self.sharks[:, 0, 0], 0, self.pars.shape[0])
             self.sharks[:, 0, 1] = np.clip(self.sharks[:, 0, 1], 0, self.pars.shape[1])
         
-        if self.stats.iterations % self.stats.resolution == 0:
-            self.labels = self.clusterer.fit(self)
-            self.stats.measure(self)
+            if self.stats.iterations % self.pars.resolution == 0:
+                self.labels = self.clusterer.fit(self)
+                self.stats.measure(self)
 
-        self.stats.iterations += 1
+            self.stats.iterations += 1
 
-        return True
+        return remaining
 
     def get_leaders(self):
         return self.leaders

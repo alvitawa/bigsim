@@ -47,6 +47,8 @@ def run_test(log_dir, simulation_parameters):
             simulation=simulation,
             enable_menu=cfg.getboolean("menu"),
             enable_metrics=cfg.getboolean("metrics"),
+            fps=cfg.getfloat("fps"),
+            sync=cfg.getboolean("sync")
         )
 
     # Run the simulation, the callback keeps the visualization synchronized

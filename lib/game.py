@@ -9,9 +9,7 @@ import pygame
 from pygame_widgets import Slider, TextBox, Button
 from .sliders import LabeledSlider
 import numpy as np
-import math
-
-FPS = 20
+import time
 
 OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0)
@@ -47,7 +45,7 @@ def change_clustering():
     pass
 
 # Set up pygame
-def init(simulation, resolution=[1080, 720], enable_menu=True, enable_metrics=True):
+def init(simulation, resolution=[1080, 720], enable_menu=True, enable_metrics=True, fps=20, sync=True):
     
     global _simulation
     _simulation = simulation
@@ -61,6 +59,15 @@ def init(simulation, resolution=[1080, 720], enable_menu=True, enable_metrics=Tr
 
     global _stop
     _stop = False
+
+    global _fps
+    _fps = fps
+
+    global _sync
+    _sync = sync
+
+    global _last_render
+    _last_render = 0
 
 
     pygame.init()
@@ -115,6 +122,13 @@ def tick():
     global _screen
     global _clock
     global _stop
+    global _last_render
+
+    if not _sync:
+        now = time.time()
+        if _last_render + 1/_fps > now:
+            return
+        _last_render = now
 
     _stop = check_input()
 
@@ -131,14 +145,15 @@ def tick():
 
     if _metrics_enabled:
         # draw FPS counter
-        draw_number(_screen, int(_clock.get_fps()), (0,0), np.abs(np.array(OCEAN_COLOR)-255))
+        draw_number(_screen, int(_clock.get_fps()) if _sync else round(_fps, 2), (0,0), np.abs(np.array(OCEAN_COLOR)-255))
 
         # draw Population counter
         draw_number(_screen, _simulation.population.shape[0], (0.9*_resolution[0], 0), np.abs(np.array(OCEAN_COLOR)-200))
 
     update_screen()
     
-    _clock.tick(FPS)
+    if _sync:
+        _clock.tick(_fps)
 
     return _stop
 

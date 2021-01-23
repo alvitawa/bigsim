@@ -15,6 +15,9 @@ dataclasses-json = "*"
 pygame = "*"
 pygame-widgets = "*"
 jupyter = "*"
+typing-extensions = "*"
+jupyterlab = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3"

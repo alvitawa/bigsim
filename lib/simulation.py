@@ -169,7 +169,7 @@ class Simulation:
                         high_score = int(parts[0][5:])
 
             index = high_score + 1
-                        
+
         self.save_stats(f"{path}/stats{index}.json")
 
     def iterate_once(self, pool):
@@ -268,9 +268,121 @@ class Simulation:
 
     def update_leaders(self, new_leaders):
         self.leaders = new_leaders
-        return
+
+    def fish_move_vectors(self, fish, neighbours, obstacles, sharks, pars: Parameters):
+        """
+            Calculate a list of directions each fish in the `fish` parameter wants to go
+            in. Each direction is represented as a vector, where the magnitude determines
+            how badly the fish wants to go in said direction. Per fish there are six 
+            different vectors, each for a different strategy like cohesion, separation
+            or wall avoidance.
+        """
+        # --- Fish Schooling ---
+        neighbours_rel = neighbours[:, None, 0, :] - fish[:, 0, :]
+        sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
+
+        # Cohesion: move to weighted center of mass of school
+        cohesion_weights = distance_to_weights(sqr_distances, pars.cohesion_range)
+        center_off_mass = (neighbours_rel * cohesion_weights[:, :, None]).sum(axis=0)
+
+        # print(sqr_distances, pars.cohesion_range, cohesion_weights)
+
+        # Seperation: move away from very close fish
+        seperation_weights = distance_to_weights(sqr_distances, pars.separation_range)
+        move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(
+            axis=0
+        )
+
+        # Alignment: align with nearby fish
+        alignment_weights = distance_to_weights(sqr_distances, pars.alignment_range)
+        target_alignment = (
+            neighbours[:, None, 1, :] * alignment_weights[:, :, None]
+        ).sum(axis=0)
+
+        # --- Obstacles ---
+        obstacles_rel = obstacles - fish[:, 0, :]
+        sqr_obs_distances = np.sqrt(np.power(obstacles_rel, 2).sum(axis=-1))
+
+        obstacle_weights = distance_to_weights(sqr_obs_distances, pars.obstacle_range)
+        obstacle_target = -1 * (obstacles_rel * obstacle_weights[:, :, None]).sum(
+            axis=0
+        )
+
+        # --- Walls ---
+        topleft_target = distance_to_weights(fish[:, 0, :] ** 2, pars.wall_range)
+        botright_target = -1 * distance_to_weights(
+            (np.array(pars.shape) - fish[:, 0, :]), pars.wall_range
+        )
+
+        wall_target = topleft_target + botright_target
+
+        # --- Predators ---
+        sharks_rel = sharks[:, None, 0, :] - fish[:, 0, :]
+        sqr_shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
+
+        shark_weights = distance_to_weights(sqr_shark_distances, pars.shark_range)
+        sharks_target = -1 * (sharks_rel * shark_weights[:, :, None]).sum(axis=0)
+        # We could also do like turn away from the direction of the shark
+
+        # Weigh directions
+        cohesion = stable_norm(center_off_mass) * pars.cohesion_weight
+        alignment = stable_norm(target_alignment) * pars.alignment_weight
+
+        separation = (
+            np.nan_to_num(move_away_target) * pars.separation_weight
+        )  # * (1 + pars.separation_weight*np.linalg.norm(cohesion, axis=1)[:, None])
+
+        obstacle = np.nan_to_num(obstacle_target * pars.obstacle_weight)
+        wall = np.nan_to_num(wall_target * pars.wall_weight)
+        shark = np.nan_to_num(sharks_target * pars.shark_weight)
+
+        return cohesion, separation, alignment, obstacle, wall, shark
+
+    def move_fish(self, fish, neighbours, obstacles, sharks, pars: Parameters):
+        """
+            This is where the logic for fish movement happens. In essence, first calculate the weighed
+            average of the move vectors of each fish (weighed by their magnitude), resulting in 
+            the direction the fish wants to be going in. Then move the current angle of the 
+            fish a fixed percentage in that direction (as determined by the `agility` parameter).
+            Lastly, move each fish forward in the direction it is facing.
+        """
+
+        # This array will be updated with the new positions for the inner fish
+        fish = np.copy(fish, order="C")
+
+        # --- Get vectors ---
+        vectors = self.fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
+
+        # The direction each fish wants to go in
+        steer_direction = sum(vectors).view(np.complex128)
+
+        # Combine current direction and steering direction using the property
+        # of complex numbers that the angle of the product of two complex numbers
+        # is the sum of the angles.
+        old_direction = fish.view(np.complex128)[:, 1]
+        delta = (steer_direction / old_direction) ** (pars.agility)
+
+        new_direction = old_direction * delta
+        new_direction /= np.abs(new_direction)
+
+        fish[:, 1, :] = new_direction.view(np.float64)
+
+        # Move the fish forward in the direction they are facing
+        fish[:, 0, :] += (
+            fish[:, 1, :] * pars.speed
+        )
+
+        # Check for NaN's
+        nans = np.argwhere(np.isnan(fish))
+        if nans.shape[0] > 0:
+            raise Exception(f"{nans.shape[0]} NaN's encountered in move_fish")
+
+        return fish
 
     def delete_fish(self, population, indexes):
+        """
+            Delete fish from the population, usually when they are eaten.
+        """
         # delete
         alive_fish = np.delete(population, indexes, 0)
 
@@ -296,10 +408,11 @@ class Simulation:
         return alive_fish
 
     def move_sharks(self, sharks, fish, obstacles, pars: Parameters):
-        # sharks = np.copy(sharks, order='C') # Who put this here? What is this
-
-        # TODO: Move this to parameters
-
+        """ 
+            The logic behind shark movement is similar to that of fish movement
+            (rotate and then move). But their behaviour is not solely described
+            by a set of move vectors.
+        """
         # Prep
         sharks_rel = sharks[:, None, 0, :] - sharks[:, 0, :]
         shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
@@ -329,7 +442,7 @@ class Simulation:
         ranking = np.argsort(fish_distances, axis=0)
         # Ignore far away fish to avoid it balancing
         mass[ranking >= self.pars.shark_top_zoveel] = [0, 0]
-        center_off_mass = mass.sum(axis=0)
+        # center_off_mass = mass.sum(axis=0)
 
         # chase_school = np.nan_to_num(center_off_mass * pars.cohesion_weight)
 
@@ -396,108 +509,6 @@ class Simulation:
         self.shark_state[eating_sharks] = -self.pars.shark_cooldown_duration
 
         return sharks, eaten_fish_indexes
-
-    def fish_move_vectors(self, fish, neighbours, obstacles, sharks, pars: Parameters):
-        # --- Fish Schooling ---
-        neighbours_rel = neighbours[:, None, 0, :] - fish[:, 0, :]
-        sqr_distances = np.sqrt(np.power(neighbours_rel, 2).sum(axis=-1))
-
-        # Cohesion: move to weighted center of mass of school
-        cohesion_weights = distance_to_weights(sqr_distances, pars.cohesion_range)
-        center_off_mass = (neighbours_rel * cohesion_weights[:, :, None]).sum(axis=0)
-
-        # print(sqr_distances, pars.cohesion_range, cohesion_weights)
-
-        # Seperation: move away from very close fish
-        seperation_weights = distance_to_weights(sqr_distances, pars.separation_range)
-        move_away_target = -1 * (neighbours_rel * seperation_weights[:, :, None]).sum(
-            axis=0
-        )
-
-        # Alignment: align with nearby fish
-        alignment_weights = distance_to_weights(sqr_distances, pars.alignment_range)
-        target_alignment = (
-            neighbours[:, None, 1, :] * alignment_weights[:, :, None]
-        ).sum(axis=0)
-
-        # --- Obstacles ---
-        obstacles_rel = obstacles - fish[:, 0, :]
-        sqr_obs_distances = np.sqrt(np.power(obstacles_rel, 2).sum(axis=-1))
-
-        obstacle_weights = distance_to_weights(sqr_obs_distances, pars.obstacle_range)
-        obstacle_target = -1 * (obstacles_rel * obstacle_weights[:, :, None]).sum(
-            axis=0
-        )
-
-        # --- Walls ---
-        topleft_target = distance_to_weights(fish[:, 0, :] ** 2, pars.wall_range)
-        botright_target = -1 * distance_to_weights(
-            (np.array(pars.shape) - fish[:, 0, :]), pars.wall_range
-        )
-
-        wall_target = topleft_target + botright_target
-
-        # --- Predators ---
-        sharks_rel = sharks[:, None, 0, :] - fish[:, 0, :]
-        sqr_shark_distances = np.sqrt(np.power(sharks_rel, 2).sum(axis=-1))
-
-        shark_weights = distance_to_weights(sqr_shark_distances, pars.shark_range)
-        sharks_target = -1 * (sharks_rel * shark_weights[:, :, None]).sum(axis=0)
-        # We could also do like turn away from the direction of the shark
-
-        # Weigh directions
-        cohesion = stable_norm(center_off_mass) * pars.cohesion_weight
-        alignment = stable_norm(target_alignment) * pars.alignment_weight
-
-        separation = (
-            np.nan_to_num(move_away_target) * pars.separation_weight
-        )  # * (1 + pars.separation_weight*np.linalg.norm(cohesion, axis=1)[:, None])
-
-        obstacle = np.nan_to_num(obstacle_target * pars.obstacle_weight)
-        wall = np.nan_to_num(wall_target * pars.wall_weight)
-        shark = np.nan_to_num(sharks_target * pars.shark_weight)
-
-        return cohesion, separation, alignment, obstacle, wall, shark
-
-    def move_fish(self, fish, neighbours, obstacles, sharks, pars: Parameters):
-        """
-            Updates the first parameter 'fish'
-        """
-
-        # This array will be updated with the new positions for the inner fish
-        fish = np.copy(fish, order="C")
-
-        # --- Get vectors ---
-        vectors = self.fish_move_vectors(fish, neighbours, obstacles, sharks, pars)
-
-        steer_direction = sum(vectors).view(np.complex128)
-        # confidence = np.linalg.norm(steer_direction, axis=1)[:, None]
-        # confidence[confidence == 0] = 1
-        # steer_normed = steer_direction #/ confidence
-
-        # print("Steer: ", steer_normed.shape)
-
-        # Combine current direction and steering direction
-
-        old_direction = fish.view(np.complex128)[:, 1]
-        delta = (steer_direction / old_direction) ** (pars.agility)
-
-        new_direction = old_direction * delta
-        new_direction /= np.abs(new_direction)
-
-        fish[:, 1, :] = new_direction.view(np.float64)
-
-        # move da fish
-        fish[:, 0, :] += (
-            fish[:, 1, :] * pars.speed
-        )  # * (1 / (1 + np.exp(-(confidence - 500)/100)) + 1)
-
-        # check for error
-        nans = np.argwhere(np.isnan(fish))
-        if nans.shape[0] > 0:
-            raise Exception(f"{nans.shape[0]} NaN's encountered in move_fish")
-
-        return fish
 
     def get_updated_positions(
         self,

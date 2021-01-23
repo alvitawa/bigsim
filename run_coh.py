@@ -7,6 +7,16 @@ ratios = np.linspace(0, 1, 10, endpoint=True)
 
 python = cfg.get("python")
 
+
+total_weight = 200.14
+# (
+#     simulation.pars.alignment_weight + simulation.pars.cohesion_weight
+# )
+
 if __name__ == "__main__":
     for ratio in ratios:
-        os.system(f"{python} run.py logs/coh{ratio} 20 {ratio}")
+
+        alignment_weight = (1 - ratio) * total_weight
+        cohesion_weight = (ratio) * total_weight
+
+        os.system(f"{python} run.py logs/coh{ratio} 20 --cohesion_weight {cohesion_weight} --alignment_weight {alignment_weight}")

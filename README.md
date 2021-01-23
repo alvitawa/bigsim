@@ -58,4 +58,4 @@ Make sure to run jupyter notebook from the pipenv environment:
 
 ## Tests
 
-We have written no tests. There are, however, assertions in the code to ensure the reliability of the simulations. In particular, the file `pars.json` is guaranteed to match the parameters of all simulation logs inside the same directory (by default the log directories are inside `logs/`).
+We have written no unit tests. There are, however, assertions in the code to ensure the reliability of the simulations. In particular, the file `pars.json` is guaranteed to match the parameters of all simulation logs inside the same directory (by default the log directories are inside `logs/`).

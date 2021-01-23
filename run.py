@@ -1,7 +1,9 @@
 """
     Script to run the simulations.
 
-    Usage: python3 [log directory] [number of simulations] [cohesion percentage]
+    Usage: `python run.py [log directory] [number of simulations] ...simulation parameters...`
+
+    Type `python run.py --help` to see all options, including the simulation parameters.
 
     Global configuration that does not affect the results of the simulatinos
     can be found in the file `config.ini`
@@ -20,10 +22,8 @@ from lib.config import *
 
 import lib.game as game
 
-import threading
 
-
-def run_test(log_dir=None, cohesion_percent=None):
+def run_test(log_dir, simulation_parameters):
     """
         Create, run and log a single simulation, visualizing it as configured in config.ini
 
@@ -32,20 +32,12 @@ def run_test(log_dir=None, cohesion_percent=None):
 
     # Init simulation
     simulation = Simulation(
-        pars=None,
+        pars=simulation_parameters,
         grid_size=(GRID_SIZE, GRID_SIZE),
         box_sight_radius=BOX_SIGHT,
         n_threads=cfg.getint("n_threads"),
         default_save=cfg.get("save"),
     )
-
-    if cohesion_percent != None:
-        total_weight = (
-            simulation.pars.alignment_weight + simulation.pars.cohesion_weight
-        )
-
-        simulation.pars.alignment_weight = (1 - cohesion_percent) * total_weight
-        simulation.pars.cohesion_weight = (cohesion_percent) * total_weight
 
     # Initialize the visualization
     if not HEADLESS:
@@ -66,12 +58,8 @@ def run_test(log_dir=None, cohesion_percent=None):
 
     simulation.log(log_dir)
 
-    if not HEADLESS:
-        return game._stop
-    return False
 
-
-def run_multiple_tests(log_dir=None, n_sims=1, ratio=None):
+def run_multiple_tests(log_dir, n_sims, simulation_parameters):
     """
         Run `n_sims` simulations. Save logs to `log_dir`.
 
@@ -82,22 +70,57 @@ def run_multiple_tests(log_dir=None, n_sims=1, ratio=None):
         print("Working on: ", log_dir, f" ({n_sims} simulations)")
 
     for _ in range(n_sims):
-        user_exit = run_test(log_dir, ratio)
+        run_test(log_dir, simulation_parameters)
 
-        if user_exit:
+        # Stop if the game window was closed
+        if not HEADLESS and game._stop:
             break
 
     print("Done!")
 
 
 if __name__ == "__main__":
-    import sys
+    import argparse
 
-    log_dir = sys.argv[1] if len(sys.argv) > 1 else None
-    n_sims = int(sys.argv[2]) if len(sys.argv) > 2 else 1
-    ratio = float(sys.argv[3]) if len(sys.argv) > 3 else None
+    from dataclasses import fields
 
-    run_multiple_tests(log_dir, n_sims, ratio)
+    # There will be one command line option per parameter
+    parameters = [field.name for field in fields(Parameters)]
+
+    # Standard command line argument parsing
+    parser = argparse.ArgumentParser(
+        description="Run N simulations with the configured parameters."
+    )
+    parser.add_argument(
+        "log_directory",
+        default=None,
+        type=str,
+        nargs="?",
+        help="The directory to store the logs for this simulations (like logs/test_sims).",
+    )
+    parser.add_argument(
+        "N", default=1, type=int, nargs="?", help="Number of simulations."
+    )
+    for par in parameters:
+        parser.add_argument(f"--{par}", type=float, nargs="?")
+
+    args = parser.parse_args()
+    log_dir = args.log_directory
+    n_sims = args.N
+
+    try:
+        simulation_parameters = Parameters.load(cfg.get("save"))
+    except FileNotFoundError:
+        simulation_parameters = Parameters()
+
+    for par in parameters:
+        value = getattr(args, par)
+        if value is None:
+            continue
+        simulation_parameters[par] = value
+
+    # Run the actual simulations with the specified parameters
+    run_multiple_tests(log_dir, n_sims, simulation_parameters)
 
     if not HEADLESS:
         game.quit()

@@ -2,7 +2,7 @@
 
 ## Setup
 
-Our code runs on python `~3.6` and uses `pipenv`[1] to manage dependencies, you may need to install both.
+Our code runs on python3 and uses `pipenv`[1] to manage dependencies, you may need to install both.
 
 The following command will install all dependencies (through `pip`):
 

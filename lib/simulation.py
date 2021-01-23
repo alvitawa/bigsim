@@ -245,23 +245,27 @@ class Simulation:
         if n == None:
             n = self.pars.max_steps
 
+        ended = False
+        start_time = time.time()
         with Pool(processes=self.n_threads) as pool:
-            start_time = time.time()
             for _ in tqdm(range(n)):
                 if (
                     self.population.shape[0] == 0
                     or self.stats.iterations >= self.pars.max_steps <= 0
                 ):
-                    return True
+                    ended = True
+                    break
 
                 if callback():
-                    return False
+                    break
 
                 self.iterate_once(pool)
-            end_time = time.time()
-            self.stats.duration += end_time - start_time
+            else:
+                ended = True
+        end_time = time.time()
+        self.stats.duration += end_time - start_time
 
-        return True
+        return ended
 
     def get_leaders(self):
         return self.leaders

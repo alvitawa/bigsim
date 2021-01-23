@@ -44,8 +44,11 @@ def run_test(log_dir=None, cohesion_percent=None):
             simulation.pars.alignment_weight + simulation.pars.cohesion_weight
         )
 
-        simulation.pars.alignment_weight = (1 - cohesion_percent) * total_weight
-        simulation.pars.cohesion_weight = (cohesion_percent) * total_weight
+        # simulation.pars.alignment_weight = (1 - cohesion_percent) * total_weight
+        # simulation.pars.cohesion_weight = (cohesion_percent) * total_weight
+
+        simulation.pars.alignment_weight = cohesion_percent * total_weight
+        simulation.pars.cohesion_weight = 0
 
     # Initialize the visualization
     if not HEADLESS:

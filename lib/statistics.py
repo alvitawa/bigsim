@@ -13,7 +13,7 @@ from .parameters import Parameters
 @dataclass_json
 @dataclass
 class Statistics:
-    """Number of iterations executed"""
+    """Tracks statistics of a smimulation."""
 
     iterations: int = 0
     boid_count: Any = field(default_factory=lambda: [])

@@ -19,4 +19,5 @@ if __name__ == "__main__":
         alignment_weight = (1 - ratio) * total_weight
         cohesion_weight = (ratio) * total_weight
 
+        # Pass on the parameters as command-line arguments that will overwrite the default parameters.
         os.system(f"{python} run.py logs/coh{ratio} 20 --cohesion_weight {cohesion_weight} --alignment_weight {alignment_weight}")

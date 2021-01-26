@@ -47,7 +47,6 @@ def change_clustering():
 
 # Set up pygame
 def init(simulation, resolution=[1080, 720], enable_menu=True, enable_metrics=True, fps=20, sync=True):
-    
     global _simulation
     _simulation = simulation
 
@@ -79,14 +78,14 @@ def init(simulation, resolution=[1080, 720], enable_menu=True, enable_metrics=Tr
     _screen = pygame.display.set_mode(resolution)
 
     global _clustering_method
-    CLUSTERING_METHOD = "LARS_CLUSTERING"
+    _clustering_method = "LARS_CLUSTERING"
 
     button_data = [
 #       Button rectangle                               function                     TEXT
         [[0, _screen.get_height()-60, 60, 60],          toggle_menu,                 "menu"],
         [[_screen.get_width()-130, _screen.get_height() - 60, 60, 60],   save,        "SAVE"],
         [[_screen.get_width()-60, _screen.get_height() - 60, 60, 60],    load,        "LOAD"],
-        [[_screen.get_width()-200, _screen.get_height() - 60, 60, 60],    change_clustering,        CLUSTERING_METHOD]
+        [[_screen.get_width()-200, _screen.get_height() - 60, 60, 60],    change_clustering,        _clustering_method]
     ]
 
     global _buttons
@@ -119,11 +118,7 @@ def init(simulation, resolution=[1080, 720], enable_menu=True, enable_metrics=Tr
     return _screen, _clock
 
 def tick():
-    global __simulation
-    global _screen
-    global _clock
-    global _stop
-    global _last_render
+    global _simulation, _screen, _clock, _stop, _last_render
 
     if not _sync:
         now = time.time()
@@ -163,17 +158,16 @@ def quit():
 
 
 def save():
-    global __simulation
     _simulation.save_pars()
 
 def load():
-    global __simulation
+    global _simulation
     pars = _simulation.load_pars()
     for (par, _), slider in zip(SLIDABLE_PARAMETERS, _sliders):
         slider.set_value(pars[par])
 
 def check_input():
-    global __simulation
+    global _simulation
 
     events = pygame.event.get()
 
@@ -256,7 +250,7 @@ def draw_number(_screen, number, location, color):
     # pygame.display.update()
 
 def debug_draw(_screen, max_steps=1000000):
-    global __simulation
+    global _simulation
 
     window = pygame.display.get_window_size()
 
@@ -316,7 +310,7 @@ draw_count = 120
 
 colors = None
 def draw_population(_screen):
-    global __simulation, colors, draw_count, om_de_zoveel
+    global _simulation, colors, draw_count, om_de_zoveel
 
     scaling = np.array(pygame.display.get_window_size()) / _simulation.pars.shape
 

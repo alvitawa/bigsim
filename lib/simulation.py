@@ -509,8 +509,28 @@ class Simulation:
         sharks[:, 0, :] += update
 
         # Eating
-        eaten_fish_indexes, eating_sharks = find_eaten_fish(fish_distances)
+        # eaten_fish_indexes, eating_sharks = None
+
+        if self.pars.sharks_eat_single:
+            closest_fish = np.argmin(fish_distances, axis=0)
+            closest_distances = np.min(fish_distances, axis=0)
+
+            eaten = np.logical_and(closest_distances < self.pars.shark_eat_range, self.shark_state>=0)
+            
+            eaten_fish_indexes = closest_fish[eaten]
+            eating_sharks = np.where(eaten)[0]
+        else:
+            in_range = fish_distances < self.pars.shark_eat_range
+
+            idx = np.where(in_range)
+            indx_fish = idx[0]
+            indx_shark = idx[1]
+
+            eaten_fish_indexes = np.unique(indx_fish)
+            eating_sharks = np.unique(indx_shark)
+        
         self.shark_state[eating_sharks] = -self.pars.shark_cooldown_duration
+
 
         return sharks, eaten_fish_indexes
 

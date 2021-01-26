@@ -57,6 +57,9 @@ class Parameters:
     shark_cooldown_duration: float = 20
     shark_top_zoveel: float = 10
 
+    shark_eat_range: float = 0.2
+    sharks_eat_single: bool = True
+
     def load(f):
         with open(f, "r") as file:
             pars = Parameters.from_json(file.read())

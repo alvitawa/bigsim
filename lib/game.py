@@ -21,6 +21,7 @@ draw_progress = True
 N_COLORS = 100
 COLORS = np.random.choice(range(256), size=3*N_COLORS).reshape(N_COLORS, 3)
 
+# the changable parameters during the simulation
 SLIDABLE_PARAMETERS = [
 #   Name                    Max Value
     ("speed",               0.4),
@@ -88,6 +89,7 @@ def init(simulation, resolution=[1080, 720], enable_menu=True, enable_metrics=Tr
         [[_screen.get_width()-200, _screen.get_height() - 60, 60, 60],    change_clustering,        _clustering_method]
     ]
 
+    # buttons
     global _buttons
     _buttons = []
     for rect, func, text in button_data:
@@ -96,6 +98,7 @@ def init(simulation, resolution=[1080, 720], enable_menu=True, enable_metrics=Tr
                         onClick=func)
         _buttons.append(button)
 
+    # time
     global _clock
     _clock = pygame.time.Clock()
 
@@ -155,7 +158,6 @@ def tick():
 
 def quit():
     pygame.quit()
-
 
 def save():
     _simulation.save_pars()
@@ -315,25 +317,8 @@ def draw_population(_screen):
     scaling = np.array(pygame.display.get_window_size()) / _simulation.pars.shape
 
     # Coloring with GMM
-    # positions = _simulation.population[:,0,:]
 
     for boid, label in zip(_simulation.population, _simulation.labels):
-        # xness = location[0] / pygame.display.get_window_size()[0]
-        # if math.isnan(xness):
-        #     xness = 0
-
-        # yness = location[1] / pygame.display.get_window_size()[1]
-        # if math.isnan(yness):
-        #     yness = 0
-
-        # gradient = 0.25 + 0.75 * yness ** 2
-        # color = (int(249 * gradient), int(166 * gradient), int(2 * gradient))
-
-        # pygame.draw.circle(_screen, (wowa, wowb, wowc), location, 5)
-
-        # fun use unit_dir instead of boid[1]
-        # mouse = np.array(location) - np.array(pygame.mouse.get_pos())
-        # unit_dir = (mouse) / np.linalg.norm(mouse)
 
         if boid[1][1] >= 0:
             rotation = np.arccos(boid[1][0])
@@ -342,15 +327,6 @@ def draw_population(_screen):
 
         color = COLORS[label % N_COLORS]
         draw_fish(_screen, boid[0] * scaling, rotation, color, 7, 4)
-
-        # print(boid[1][0])
-
-        # rotation = -np.arccos(boid[1][0]) * 180 / np.pi
-
-        # fish_rect = fish.get_rect()
-        # fish_rect.center = location
-
-        # _screen.blit(pygame.transform.rotate(fish, rotation), fish_rect)
 
     for obstacle in _simulation.obstacles:
         location = tuple((obstacle[0] * scaling))
@@ -382,6 +358,7 @@ def update_screen():
 
 
 def draw_fish(surface, position, rotation, color=BOID_COLOR, length=30, width=15):
+    # the fish array
     head_up_down = np.array(
         [[0.5 * length, 0],
         [0.25 * length, 0.5 * width],
@@ -406,6 +383,7 @@ def draw_fish(surface, position, rotation, color=BOID_COLOR, length=30, width=15
 
 def draw_shark(surface, position, rotation, color, length, width, eatin = 'not_eatin'):
     if eatin == 'mouth_open':
+        # shark array normal
         head_up_down = np.array(
             [[1.2 * length - length / 1.2, -0.1 * width],
             [0.7 * length - length / 1.2, 0 * width],
@@ -421,6 +399,7 @@ def draw_shark(surface, position, rotation, color, length, width, eatin = 'not_e
             ]
         )
     elif eatin == 'mouth_wide_open':
+        # shark when eating
         head_up_down = np.array(
             [[1.2 * length - length / 1.2, -0.3 * width],
             [0.7 * length - length / 1.2, 0 * width],
@@ -435,9 +414,9 @@ def draw_shark(surface, position, rotation, color, length, width, eatin = 'not_e
             [0.5 * length - length / 1.2, -0.2 * width]
             ]
         )
-    # elif eatin == 'mouth_closed':
     else:
         head_up_down = np.array(
+            # shark when just ate
             [
             [.5 * length   - length / 1.2, -0.2 * width],
             [1.2 * length     - length / 1.2, 0. * width],

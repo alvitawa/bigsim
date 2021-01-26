@@ -20,13 +20,13 @@ First, run the simulations:
 
 `pipenv run python run_research.py`   
 
-This will take a long time (we ran a lot of simulations). You can edit the `n_sims` parameters to run fewer.
+This will take a long time (we ran a lot of simulations). You can edit the `n_sims` variable in `run_research.py` to run fewer. If you want to stop the simulations you need to pause the process (`Ctrl+Z` on linux) and then kill it (`kill %1`).
 
 Then, generate the analysis on the simulations:
 
 `pipenv run jupyter nbconvert --execute --to html VisualizeResearch.ipynb`
 
-You can open the generated html file (`Visualize.html`) with any browser.
+You can open the generated html file (`VisualizeResearch.html`) with any browser.
 
 ## Visualizing a single simulation
 
@@ -34,7 +34,7 @@ The following command will run a single simulation and generate some plots about
 
 `pipenv run python run.py --plot`
 
-The plots are stored in Visualize.html, the program will try to open them in a web browser.
+The plots are stored in Visualize.html, the program will try to open them in a web browser (with `xdg-open`, common in linux distro's).
 
 To run a few simulations with the same parameters:
 

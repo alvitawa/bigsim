@@ -141,4 +141,3 @@ if __name__ == "__main__":
         os.system("pipenv run jupyter nbconvert --execute --to html Visualize.ipynb")
         # Try the linux method and windows method
         os.system("xdg-open Visualize.html")
-        os.startfile("Visualize.html", 'open')

@@ -19,8 +19,11 @@
 """
 from lib.simulation import *
 from lib.config import *
+from lib.statistics import Statistics, load_logs, stats_to_numpy
 
 import lib.game as game
+
+import matplotlib.pyplot as plt
 
 
 def run_test(log_dir, simulation_parameters):
@@ -139,7 +142,24 @@ if __name__ == "__main__":
         game.quit()
 
     if plot:
-        open("last_log.tmp.txt", 'w').write(log_dir)
-        os.system("pipenv run jupyter nbconvert --execute --to html Visualize.ipynb")
-        opener ="open" if sys.platform == "darwin" else "xdg-open"
-        subprocess.call([opener, "Visualize.html"])
+        os.system(f"echo \"{log_dir}\" > last_log.tmp.txt")
+        pars, stats = load_logs(log_dir)
+
+        s, bc, sc, ss = stats[-1].to_numpy(pars)
+        x = np.arange(s)*pars.resolution
+
+        fig, ax = plt.subplots(1, 1)
+
+        ax.set_title("Progress of boid count and school count")
+
+        ax.plot(x, bc, c='b', label='boid count')
+        ax2 = ax.twinx()
+        ax2.plot([],[], c='b', label='boid count')
+        ax2.plot(x, sc, c='g', label='school count')
+        ax2.legend()
+        ax.set_xlabel("iterations")
+        ax.set_ylabel(r"boids")
+        ax2.set_ylabel(r"schools")
+
+        plt.savefig("single_simulation.png")
+        plt.show()

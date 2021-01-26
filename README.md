@@ -19,15 +19,21 @@ The following command will run a single simulation and generate some plots about
 
 `pipenv run python run.py --plot`
 
-(You may see some errors at the end)
+You will see a plot of the progress of the simulation at the end.
 
-The plots are stored in Visualize.html, the program will try to open them in a web browser (with `xdg-open`, common in linux distro's).
+(You may see some errors at the end, these may be OK)
 
 To run a few simulations with the same parameters:
 
 `pipenv run python run.py logs/test_logs 4 --plot`
 
 This will run 4 simulations and save the logs of the simulations in `logs/test_logs` (and plot the visualizations afterwards).
+
+To see more information on these simulations, you can view the `Visualise.ipynb` notebook:
+
+`pipenv run jupyter nbconvert --execute --to html Visualize.ipynb`
+
+(or open jupyter notebook from the virtual env)
 
 You can speed up the simulations by setting `sync=false` or `headless=true` in `config.ini`
 
@@ -45,6 +51,8 @@ This will take a long time (we ran a lot of simulations). You can edit the `n_si
 Then, generate the analysis on the simulations:
 
 `pipenv run jupyter nbconvert --execute --to html VisualizeResearch.ipynb`
+
+(or open jupyter notebook from the virtual env)
 
 You can open the generated html file (`VisualizeResearch.html`) with any browser.
 

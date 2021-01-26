@@ -140,7 +140,7 @@ class Simulation:
         if path == None:
             if not os.path.isdir("./logs/"):
                 os.mkdir("./logs")
-            path = "./logs/" + str(time.time())
+            path = "./logs/e" + str(time.time())
 
         pars_path = path + "/pars.json"
 

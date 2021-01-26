@@ -82,6 +82,8 @@ def run_multiple_tests(log_dir, n_sims, simulation_parameters):
 
 
 if __name__ == "__main__":
+    import os
+    import time
     import argparse
 
     from dataclasses import fields
@@ -103,12 +105,19 @@ if __name__ == "__main__":
     parser.add_argument(
         "N", default=1, type=int, nargs="?", help="Number of simulations."
     )
+    parser.add_argument("--plot",default=False, action="store_true")
     for par in parameters:
         parser.add_argument(f"--{par}", type=float, nargs="?")
 
     args = parser.parse_args()
     log_dir = args.log_directory
     n_sims = args.N
+    plot = args.plot
+    if log_dir == None:
+        log_dir = "./logs/s" + str(time.time())
+
+        if not os.path.isdir("./logs/"):
+            os.mkdir("./logs")
 
     try:
         simulation_parameters = Parameters.load(cfg.get("save"))
@@ -126,3 +135,10 @@ if __name__ == "__main__":
 
     if not HEADLESS:
         game.quit()
+
+    if plot:
+        os.system(f"echo \"{log_dir}\" > last_log.tmp.txt")
+        os.system("pipenv run jupyter nbconvert --execute --to html Visualize.ipynb")
+        # Try the linux method and windows method
+        os.system("xdg-open Visualize.html")
+        os.startfile("Visualize.html", 'open')

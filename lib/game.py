@@ -6,12 +6,13 @@ environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
 environ['SDL_AUDIODRIVER'] = 'dsp'
 
 import pygame
-from pygame_widgets import Slider, TextBox, Button
+from pygame_widgets import Button
 from .sliders import LabeledSlider
 import numpy as np
 import time
 
-OCEAN_COLOR = (0, 0, 0) # (49, 36, 131) # (255, 255, 255) 
+# 53626fff
+OCEAN_COLOR = (30, 32, 40) # (49, 36, 131) # (255, 255, 255) 
 BOID_COLOR = (219, 126, 67) # (0, 0, 0)
 PROGRESS_COLOR = (OCEAN_COLOR[0], OCEAN_COLOR[1], OCEAN_COLOR[2]+5)
 
@@ -369,7 +370,7 @@ def draw_population(_screen):
             rotation = -np.arccos(shark[1][0])
 
         if _simulation.shark_state[i] > 0:
-            draw_shark(_screen, shark[0] * scaling, rotation, (169, 20, 1), 40, 40, eatin = 'mouth_wide_open') 
+            draw_shark(_screen, shark[0] * scaling, rotation, (189, 20, 10), 40, 40, eatin = 'mouth_wide_open') 
         elif _simulation.shark_state[i] < 0:
             draw_shark(_screen, shark[0] * scaling, rotation, (192,192,192), 40, 40, eatin = 'mouth_closed')
         else:

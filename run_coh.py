@@ -4,6 +4,7 @@ import os
 from lib.config import cfg
 
 ratios = np.linspace(0, 1, 20, endpoint=True)
+n_sims = 100
 
 python = cfg.get("python")
 
@@ -17,13 +18,12 @@ if __name__ == "__main__":
     if not os.path.isdir("./logs/"):
         os.mkdir("./logs")
 
-    while True:
-        for ratio in ratios:
+    for ratio in ratios:
 
-            alignment_weight = (1 - ratio) * total_weight
-            cohesion_weight = (ratio) * total_weight
+        alignment_weight = (1 - ratio) * total_weight
+        cohesion_weight = (ratio) * total_weight
 
-            # Pass on the parameters as command-line arguments that will overwrite the default parameters.
-            command = f"{python} run.py logs/coh{ratio} 1 --cohesion_weight {cohesion_weight} --alignment_weight {alignment_weight}"
-            print(command)
-            os.system(command)
+        # Pass on the parameters as command-line arguments that will overwrite the default parameters.
+        command = f"{python} run.py logs/coh{ratio} {n_sims} --cohesion_weight {cohesion_weight} --alignment_weight {alignment_weight}"
+        print(command)
+        os.system(command)

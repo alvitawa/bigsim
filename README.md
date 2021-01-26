@@ -36,7 +36,7 @@ This section shows how to quickly reproduce the results of our research. It take
 
 First, run the simulations:
 
-`pipenv run python run_research.py`   
+`pipenv run python run_research.py`
 
 This will take a long time (we ran a lot of simulations). You can edit the `n_sims` variable in `run_research.py` to run fewer. If you want to stop the simulations you need to pause the process (`Ctrl+Z` on linux) and then kill it (`kill %1`).
 

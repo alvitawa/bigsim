@@ -84,6 +84,8 @@ def run_multiple_tests(log_dir, n_sims, simulation_parameters):
 if __name__ == "__main__":
     import os
     import time
+    import subprocess
+    import sys
     import argparse
 
     from dataclasses import fields
@@ -139,5 +141,5 @@ if __name__ == "__main__":
     if plot:
         os.system(f"echo \"{log_dir}\" > last_log.tmp.txt")
         os.system("pipenv run jupyter nbconvert --execute --to html Visualize.ipynb")
-        # Try the linux method and windows method
-        os.system("xdg-open Visualize.html")
+        opener ="open" if sys.platform == "darwin" else "xdg-open"
+        subprocess.call([opener, "Visualize.html"])

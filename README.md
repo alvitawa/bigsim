@@ -18,13 +18,13 @@ This section shows how to quickly reproduce the results of our research. It take
 
 First, run the simulations:
 
-`pipenv run python run_coh.py`   
+`pipenv run python run_research.py`   
 
 This will take a long time (we ran a lot of simulations). You can edit the `n_sims` parameters to run fewer.
 
 Then, generate the analysis on the simulations:
 
-`pipenv run jupyter nbconvert --execute --to html CA_Visualize.ipynb`
+`pipenv run jupyter nbconvert --execute --to html VisualizeResearch.ipynb`
 
 You can open the generated html file (`Visualize.html`) with any browser.
 

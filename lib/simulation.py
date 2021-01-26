@@ -58,6 +58,14 @@ def stable_norm(array):
 
 
 def distance_to_weights(sqr_distances, range):
+    """
+        A gaussian-like function, translating the the distances in the input array
+        to weights (so as to give closer entities exponentially more influence than
+        far-away ones). The range parameter controls the standard deviation of the
+        gaussian.
+        
+        Used for most strategies of the fish and sharks.
+    """
     if range == 0:
         return np.zeros_like(sqr_distances)
     return np.exp(-(sqr_distances / (range / 3.0) ** 2))

@@ -2,13 +2,13 @@
 
 ## Setup
 
-Our code runs on python3 and uses `pipenv`[1] to manage dependencies, you may need to install both.
+Our code runs on python3 and uses `pipenv`[1] to manage dependencies, you may need to install both. Not everything may work as expected on platforms other than Linux (in particular, ubuntu).
 
 The following command will install all dependencies (through `pip`):
 
 `pipenv install`
 
-After the command succeeds you should be able to use the program without any issues.
+After the command succeeds you should be able to use the program without any issues (on Linux).
 
 [1] https://pypi.org/project/pipenv/
 
@@ -18,6 +18,8 @@ After the command succeeds you should be able to use the program without any iss
 The following command will run a single simulation and generate some plots about the progress of the simulation.
 
 `pipenv run python run.py --plot`
+
+(You may see some errors at the end)
 
 The plots are stored in Visualize.html, the program will try to open them in a web browser (with `xdg-open`, common in linux distro's).
 

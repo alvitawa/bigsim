@@ -12,21 +12,6 @@ After the command succeeds you should be able to use the program without any iss
 
 [1] https://pypi.org/project/pipenv/
 
-## Reproducing results
-
-This section shows how to quickly reproduce the results of our research. It takes a long time to run all the simulations however, so we recommend running a single simulation instead, see the section [Visualizing a single simulation]. If you do decide to run all the simulations, make sure to set `headless=true` in `config.ini` to disable the visualization and speed up the simulations significantly.
-
-First, run the simulations:
-
-`pipenv run python run_research.py`   
-
-This will take a long time (we ran a lot of simulations). You can edit the `n_sims` variable in `run_research.py` to run fewer. If you want to stop the simulations you need to pause the process (`Ctrl+Z` on linux) and then kill it (`kill %1`).
-
-Then, generate the analysis on the simulations:
-
-`pipenv run jupyter nbconvert --execute --to html VisualizeResearch.ipynb`
-
-You can open the generated html file (`VisualizeResearch.html`) with any browser.
 
 ## Visualizing a single simulation
 
@@ -43,6 +28,23 @@ To run a few simulations with the same parameters:
 This will run 4 simulations and save the logs of the simulations in `logs/test_logs` (and plot the visualizations afterwards).
 
 You can speed up the simulations by setting `sync=false` or `headless=true` in `config.ini`
+
+
+## Reproducing results
+
+This section shows how to quickly reproduce the results of our research. It takes a long time to run all the simulations however, so we recommend running a single simulation instead, see the section [Visualizing a single simulation]. If you do decide to run all the simulations, make sure to set `headless=true` in `config.ini` to disable the visualization and speed up the simulations significantly.
+
+First, run the simulations:
+
+`pipenv run python run_research.py`   
+
+This will take a long time (we ran a lot of simulations). You can edit the `n_sims` variable in `run_research.py` to run fewer. If you want to stop the simulations you need to pause the process (`Ctrl+Z` on linux) and then kill it (`kill %1`).
+
+Then, generate the analysis on the simulations:
+
+`pipenv run jupyter nbconvert --execute --to html VisualizeResearch.ipynb`
+
+You can open the generated html file (`VisualizeResearch.html`) with any browser.
 
 ## Tests
 

@@ -3,6 +3,5 @@ code/.DS_STORE
 .vscode/*
 config.ini
 config.ini
-logs
 .ipynb_checkpoints
 __pycache__

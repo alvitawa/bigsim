@@ -2,7 +2,7 @@
 
 ## Setup
 
-Our code runs on python `~3.6` and uses `pipenv`[1] to manage dependencies, you may need to install both.
+Our code runs on python3 and uses `pipenv`[1] to manage dependencies, you may need to install both.
 
 The following command will install all dependencies (through `pip`):
 
@@ -14,47 +14,35 @@ After the command succeeds you should be able to use the program without any iss
 
 ## Reproducing results
 
-For details on how to use the software in general, read the section [General Usage]. This section shows how to quickly reproduce the results of our research.
+This section shows how to quickly reproduce the results of our research. It takes a long time to run all the simulations however, so we recommend running a single simulation instead, see the section [Visualizing a single simulation]. If you do decide to run all the simulations, make sure to set `headless=true` in `config.ini` to disable the visualization and speed up the simulations significantly.
 
 First, run the simulations:
 
 `pipenv run python run_coh.py`   
 
-(This may take a while)
+This will take a long time (we ran a lot of simulations). You can edit the `n_sims` parameters to run fewer.
 
 Then, generate the analysis on the simulations:
 
-`pipenv run jupyter nbconvert --execute --to html Visualize.ipynb`
+`pipenv run jupyter nbconvert --execute --to html CA_Visualize.ipynb`
 
 You can open the generated html file (`Visualize.html`) with any browser.
 
-## General usage
+## Visualizing a single simulation
 
-There are two components to our software architecture:
-    1. Generating simulation data
-    2. Analyzing simulation data
+The following command will run a single simulation and generate some plots about the progress of the simulation.
 
-### Generating simulation data
+`pipenv run python run.py --plot`
 
-A single simulation can be run with:
+The plots are stored in Visualize.html, the program will try to open them in a web browser.
 
-`pipenv run python run.py`
+To run a few simulations with the same parameters:
 
-This will use the simulation parameters in `saved_parameters.json` by default.
+`pipenv run python run.py logs/test_logs 4 --plot`
 
-To run multiple simulations with the same parameters, use:
+This will run 4 simulations and save the logs of the simulations in `logs/test_logs` (and plot the visualizations afterwards).
 
-`pipenv run python logs/multiple_sims 10`
-
-This will run 10 simulations and save the simulation logs in `logs/multiple_sims`
-
-### Analyzing simulation data
-
-There are a few jupyter notebooks in the root directory that show how to make visualizations based on the simulation logs.
-
-Make sure to run jupyter notebook from the pipenv environment:
-
-`pipenv run jupyter notebook`
+You can speed up the simulations by setting `sync=false` or `headless=true` in `config.ini`
 
 ## Tests
 

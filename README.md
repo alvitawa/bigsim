@@ -21,8 +21,6 @@ The following command will run a single simulation and generate some plots about
 
 You will see a plot of the progress of the simulation at the end.
 
-(You may see some errors at the end, these may be OK)
-
 To run a few simulations with the same parameters:
 
 `pipenv run python run.py logs/test_logs 4 --plot`

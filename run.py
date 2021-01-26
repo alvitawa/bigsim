@@ -139,7 +139,7 @@ if __name__ == "__main__":
         game.quit()
 
     if plot:
-        os.system(f"echo \"{log_dir}\" > last_log.tmp.txt")
+        open("last_log.tmp.txt", 'w').write(log_dir)
         os.system("pipenv run jupyter nbconvert --execute --to html Visualize.ipynb")
         opener ="open" if sys.platform == "darwin" else "xdg-open"
         subprocess.call([opener, "Visualize.html"])

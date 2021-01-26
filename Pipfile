@@ -18,6 +18,7 @@ jupyter = "*"
 typing-extensions = "*"
 jupyterlab = "*"
 matplotlib = "*"
+async-generator = "*"
 
 [requires]
 python_version = "3"

@@ -1,5 +1,16 @@
 # Boid School Simulation
 
+Simulation of schooling fish with predators.
+
+The following video shows how to play around with the simulator (https://www.youtube.com/watch?v=AvthW_AF5FY):
+
+[![Watch the video](https://img.youtube.com/vi/AvthW_AF5FY/maxresdefault.jpg)](https://www.youtube.com/watch?v=AvthW_AF5FY)
+
+Poster of the research we did using this simulation:
+
+![Poster Image](https://user-images.githubusercontent.com/10909323/106357854-06827300-6309-11eb-975f-6a5a06ed1d0d.png)
+
+
 ## Setup
 
 Our code runs on python3 and uses `pipenv`[1] to manage dependencies, you may need to install both. Not everything may work as expected on platforms other than Linux (in particular, ubuntu).
